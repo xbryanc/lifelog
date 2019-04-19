@@ -1,0 +1,10 @@
+.DS_Store
+/*.log
+node_modules/
+*.swp
+*.icloud
+package-lock.json
+yarn.lock
+.idea/*
+client/public/bundle.js
+.env
