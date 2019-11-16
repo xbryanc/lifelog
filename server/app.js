@@ -11,6 +11,9 @@ const path = require('path');
 require('dotenv').config();
 
 // local dependencies
+const db = require('./db');
+const passport = require('./passport');
+const api = require('./routes/api');
 
 // initialize express app
 const app = express();
@@ -28,6 +31,8 @@ app.use(session({
 }));
 
 app.use(express.static(publicPath));
+
+app.use('/api', api);
 
 app.get('/', function (req, res) {
   res.sendFile(path.join(publicPath, 'index.html'));

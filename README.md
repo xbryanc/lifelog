@@ -18,7 +18,7 @@ npm run dev
 
 Now you can access at localhost:5000
 
-NOTE: proxies to url's besides root will have to be adjusted through webpack.config.js
+NOTE: proxies to url's besides root will have to be adjusted through webpack.config.js after being added to server/app.js
 
 DEPLOYING:
 
