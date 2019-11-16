@@ -1,7 +1,5 @@
 // libraries
-const https = require('https');
 const http = require('http');
-const fs = require('fs');
 const bodyParser = require('body-parser');
 const session = require('express-session');
 const express = require('express');
