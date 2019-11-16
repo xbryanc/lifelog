@@ -52,17 +52,7 @@ app.use(function(err, req, res, next) {
 // port config
 const port = (process.env.PORT || 3000); // config variable
 
-let server;
-if (!process.env.DEV_MODE) {
-//   const options = {
-//     ca: fs.readFileSync('/etc/letsencrypt/live/bryanchen.me/chain.pem'),
-//     key: fs.readFileSync('/etc/letsencrypt/live/bryanchen.me/privkey.pem'),
-//     cert: fs.readFileSync('/etc/letsencrypt/live/bryanchen.me/cert.pem'),
-//   };
-//   server = https.createServer(options, app);
-} else {
-  server = http.Server(app);
-}
+let server = http.Server(app);
 
 server.listen(port, function() {
   console.log('Server running on port: ' + port);

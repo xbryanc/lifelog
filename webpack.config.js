@@ -55,9 +55,6 @@ module.exports = {
     hot: true,
     proxy: {
       '/': 'http://localhost:3000',
-      '/projects': 'http://localhost:3000',
-      '/about': 'http://localhost:3000',
-      '/uploads': 'http://localhost:3000',
     }
   }
 };
