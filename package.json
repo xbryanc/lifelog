@@ -1,7 +1,7 @@
 {
-  "name": "starter_react_app",
+  "name": "lifelog",
   "version": "1.0.0",
-  "description": "starter_react_app",
+  "description": "lifelog",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -10,14 +10,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/xbryanc/starter_react_app.git"
+    "url": "git+https://github.com/xbryanc/lifelog.git"
   },
   "author": "Bryan Chen",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/xbryanc/starter_react_app/issues"
+    "url": "https://github.com/xbryanc/lifelog/issues"
   },
-  "homepage": "https://github.com/xbryanc/starter_react_app#readme",
+  "homepage": "https://github.com/xbryanc/lifelog#readme",
   "devDependencies": {
     "@babel/preset-react": "^7.0.0",
     "babel-cli": "^6.26.0",
@@ -48,12 +48,14 @@
   },
   "dependencies": {
     "body-parser": "^1.18.3",
+    "classnames": "^2.2.6",
     "connect-ensure-login": "^0.1.1",
     "dotenv": "^7.0.0",
     "express": "^4.16.4",
     "express-session": "^1.16.1",
     "mongoose": "^5.7.11",
     "passport": "^0.4.0",
+    "passport-google-oauth20": "^2.0.0",
     "react-router-dom": "^5.0.0",
     "webpack-dev-server": "^3.3.1"
   }

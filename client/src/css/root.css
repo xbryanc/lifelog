@@ -1,0 +1,10 @@
+.login {
+    top: 40vh;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.login .button {
+    font-size: 2vw;
+}

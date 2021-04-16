@@ -28,11 +28,35 @@ app.use(session({
   saveUninitialized: 'true'
 }));
 
-app.use(express.static(publicPath));
+app.enable("trust proxy");
+
+// hook up passport
+app.use(passport.initialize());
+app.use(passport.session());
+
+// authentication routes
+app.get('/auth/google', passport.authenticate('google', { scope: ['profile'] }));
+
+app.get(
+  '/auth/google/callback',
+  passport.authenticate(
+    'google',
+    { failureRedirect: '/login' }
+  ),
+  function(req, res) {
+    res.redirect('/play');
+  }
+);
+
+app.get('/logout', function(req, res) {
+  req.logout();
+  res.redirect('/'); 
+});
 
 app.use('/api', api);
+app.use(express.static(publicPath));
 
-app.get('/', function (req, res) {
+app.get(['/', '/profile', '/profile/:user_id'], function (req, res) {
   res.sendFile(path.join(publicPath, 'index.html'));
 });
 

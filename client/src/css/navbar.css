@@ -1,0 +1,87 @@
+.navbar {
+    background-color: #383838;
+    width: 100vw;
+    position: fixed;
+    z-index: 100;
+}
+
+.navbar-brand {
+    font-family: 'Comfortaa', cursive;
+    color: whitesmoke;
+}
+
+.navbar-brand:hover {
+    color: #e0e0e0;
+}
+
+.navbar-nav {
+    width: 100vw;
+    justify-content: flex-end;
+}
+
+.nav-item {
+    font-family: 'Muli', sans-serif;
+    color: whitesmoke;
+}
+
+.nav-item:hover {
+    color: #e0e0e0;
+}
+
+.profileIcon {
+    height: 40px;
+    float: left;
+}
+
+.dropdown-menu {
+    background-color: #565656;
+    margin-top: 0;
+    padding-top: 0;
+    border-radius: 0;
+    border: none;
+}
+
+.dropdown-menu-left {
+    margin-top: 40px;
+    margin-left: -16px;
+}
+
+.dropdown-menu-right {
+    margin-right: -16px;
+}
+
+.dropdown-item {
+    color: white;
+}
+
+.dropdown-item:hover {
+    background-color: #e0e0e0;
+    border-radius: 0;
+}
+
+.dropdown:hover .dropdown-menu {
+    display: block;
+}
+
+.helpDiv {
+    height: 7.5px;
+    margin-bottom: 4px;
+    background-color: #383838;
+}
+
+.hamburger {
+    width: 20px;
+    height: 20px;
+}
+
+.navbar-toggler:focus {
+    outline: none;
+}
+
+.nav-current {
+    background-color: #4c4c4c;
+    color: whitesmoke;
+    border-radius: 3px;
+    box-shadow: 0 0 4px rgba(0, 0, 0, 0.2);
+    animation: fadeInBackground 1s ease;
+}
