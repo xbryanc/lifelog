@@ -1,0 +1,26 @@
+.homeContainer {
+    padding-top: 8vh;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.entryContainer {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+}
+
+.diaryContainer {
+    margin: 5px;
+    background-color: aqua;
+}
+
+.finContainer {
+    margin: 5px;
+    background-color: lightgreen;
+}
