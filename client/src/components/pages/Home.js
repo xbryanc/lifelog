@@ -1,5 +1,7 @@
 import React, { Component } from 'react';
 import Calendar from 'react-calendar';
+
+import CONSTANTS from '../../../../constants';
 import '../../css/app.css';
 import '../../css/home.css';
 
@@ -11,36 +13,42 @@ Diary structure: object from date strings to:
 }
 */
 
+/*
+Finance structure: object from date strings to:
+[
+    {
+        cost: Number,
+        description: String,
+        location: String,
+        tags: [Number], // index to a tag
+    }
+]
+*/
+
 export default class Home extends Component {
     constructor(props) {
         super(props);
         this.state = {
-            selectedDate: new Date(Date.now()).toLocaleDateString(),
-            diary: this.props.userInfo.diary
+            diary: this.props.userInfo.diary,
         }
     }
-
+    
     componentDidMount() {
         document.title = "Home";
+        let currentDate = new Date(Date.now()).toLocaleDateString();
+        this.calendarChange(currentDate);
     }
     
     render() {
-        let curText = "";
-        let rating = 0;
-        if (this.state.diary.hasOwnProperty(this.state.selectedDate)) {
-            let entry = this.state.diary[this.state.selectedDate];
-            curText = entry.description;
-            rating = entry.rating | 0;
-        }
         return (
             <div className="homeContainer">
-                <Calendar onClickDay={this.calendarChange} />
+                <Calendar onClickDay={e => this.calendarChange(e.toLocaleDateString())} />
                 <div className="entryContainer">
                     <div className="diaryContainer">
                         <div className="starsContainer">
-                            {this.state.selectedDate}: {rating}
+                            {this.state.selectedDate}: {this.createStars()}
                         </div>
-                        <textarea className="diaryEntry"  name="diaryEntry" id="diaryEntry" value={curText} onChange={e => this.updateDiary(e.target.value, rating)} />
+                        <textarea className="diaryEntry"  name="diaryEntry" id="diaryEntry" value={this.state.diaryText} onChange={e => this.updateDiary(e.target.value, this.state.rating)} />
                         <div className="button saveButton" onClick={this.saveInfo}>
                             Save
                         </div>
@@ -53,10 +61,44 @@ export default class Home extends Component {
         );
     }
 
-    calendarChange = (e) => {
+    createStars = () => {
+        let unfilled = "/media/star_light_unfilled.svg";
+        let filled = "/media/star_light_filled.svg";
+        return [...Array(CONSTANTS.STAR_MAX).keys()].map(ind => (
+            <img
+                key={ind}
+                className="diaryStars"
+                src={ind < this.state.displayRating ? filled : unfilled}
+                onMouseEnter={() => this.changeDisplay(ind + 1)}
+                onMouseLeave={() => this.changeDisplay(this.state.rating)}
+                onClick={() => this.updateDiary(this.state.diaryText, ind + 1)}
+            />
+        ));
+    }
+
+    changeDisplay = (num) => {
         this.setState({
-            selectedDate: e.toLocaleDateString()
+            displayRating: num
         });
+    }
+
+    calendarChange = (date) => {
+        if (this.state.diary.hasOwnProperty(date)) {
+            let entry = this.state.diary[date];
+            this.setState({
+                selectedDate: date,
+                displayRating: entry.rating,
+                rating: entry.rating,
+                diaryText: entry.description,
+            })
+        } else {
+            this.setState({
+                selectedDate: date,
+                displayRating: 0,
+                rating: 0,
+                diaryText: "",
+            });
+        }
     }
 
     updateDiary = (text, rating) => {
@@ -71,6 +113,9 @@ export default class Home extends Component {
         }
         this.setState({
             diary: newDiary,
+            diaryText: text,
+            rating: rating,
+            displayRating: rating,
         });
     }
 

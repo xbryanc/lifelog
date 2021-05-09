@@ -13,11 +13,13 @@ const UserModelSchema = new mongoose.Schema({
     type: Object,
     default: {}
   },
+  tags: [String],
   subscriptions: [{
     start: String,
     frequency: String,
     cost: Number,
     description: String,
+    location: String,
     tags: [String]
   }]
 }, {minimize: false});
