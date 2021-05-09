@@ -20,8 +20,19 @@ router.get('/user', function(req, res) {
   });
 });
 
+
 router.get('/echo', function(req, res) {
     res.send({message: req.query.message});
 });
+
+router.post('/publish_diary',
+    connect.ensureLoggedIn(),
+    function(req, res) {
+        User.findOneAndUpdate({_id: req.user._id}, {diary: req.body.diary}, function(err, user) {
+            if (err) console.log(error);
+            res.send({});
+        });
+    }
+);
 
 module.exports = router;
