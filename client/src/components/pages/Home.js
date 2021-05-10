@@ -34,18 +34,38 @@ export default class Home extends Component {
             diary: diaryCopy,
             changes: 0,
             changeSet: [],
+            keys: [],
+            konami: false,
+            bulkPaste: "",
         }
     }
     
     componentDidMount() {
         document.title = "Home";
         this.calendarChange(this.state.currentDate);
+        window.addEventListener("keydown", this.handleKeyDown);
+    }
+
+    componentWillUnmount() {
+        window.removeEventListener("keydown", this.handleKeyDown);
     }
     
     render() {
         return (
             <div className="homeContainer">
+                {!this.state.konami ? (null) :
+                    <div className="homePopupContainer" onClick={this.toggleKonami}>
+                        <div className="homePopup" onClick={(e) => { e.stopPropagation(); }}>
+                            Enter bulk entries:
+                            <textarea className="bulkEntry" name="bulkEntry" id="bulkEntry" onChange={this.updateBulk} />
+                            <div className="button saveButton" onClick={this.saveBulk}>
+                                Copy Over
+                            </div>
+                        </div>
+                    </div>
+                }
                 <Calendar
+                    className="homeCalendar"
                     onClickDay={e => this.calendarChange(e.toLocaleDateString())}
                     calendarType="US"
                     tileClassName={properties => {
@@ -81,7 +101,7 @@ export default class Home extends Component {
                                 }
                             </div>
                         </div>
-                        <textarea className="diaryEntry"  name="diaryEntry" id="diaryEntry" value={this.state.diaryText} onChange={e => this.updateDiary(e.target.value, this.state.rating)} />
+                        <textarea className="diaryEntry" name="diaryEntry" id="diaryEntry" value={this.state.diaryText} onChange={e => this.updateDiary(e.target.value, this.state.rating)} />
                         <div className="button saveButton" onClick={this.saveInfo}>
                             Save
                         </div>
@@ -167,7 +187,7 @@ export default class Home extends Component {
             newDiary[this.state.selectedDate] = {
                 description: text,
                 rating: rating,
-            }
+            };
         } else {
             rating = 0;
             delete newDiary[this.state.selectedDate];
@@ -179,6 +199,33 @@ export default class Home extends Component {
             displayRating: rating,
         });
         this.calculateChanges();
+    }
+
+    updateBulk = (e) => {
+        this.setState({
+            bulkPaste: e.target.value
+        });
+    }
+
+    saveBulk = () => {
+        let newDiary = this.state.diary;
+        let dailyEntries = this.state.bulkPaste.split("\n\n");
+        dailyEntries.forEach(dailyLog => {
+            let body = dailyLog.split("\n");
+            let header = body.splice(0, 1)[0];
+            let tokens = header.split(" ");
+            let day = tokens[0];
+            let rating = tokens[1].substring(1);
+            newDiary[day] = {
+                description: body.join("\n"),
+                rating: rating,
+            };
+        });
+        this.setState({
+            diary: newDiary,
+        });
+        this.calendarChange(this.state.selectedDate);
+        this.toggleKonami();
     }
 
     saveInfo = () => {
@@ -200,5 +247,23 @@ export default class Home extends Component {
                 }
             }
         )
+    }
+
+    handleKeyDown = (event) => {
+        let keys = this.state.keys;
+        keys.push(event.key.toLowerCase());
+        keys = keys.slice(Math.max(keys.length - CONSTANTS.KONAMI_CODE.length, 0));
+        this.setState({
+            keys: keys,
+        });
+        if (JSON.stringify(keys) == JSON.stringify(CONSTANTS.KONAMI_CODE)) {
+            this.toggleKonami();
+        }
+    }
+
+    toggleKonami = () => {
+        this.setState({
+            konami: !this.state.konami,
+        });
     }
 }
