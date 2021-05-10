@@ -31,8 +31,41 @@
     background-color: lightgreen;
 }
 
+.diaryHeader {
+    display: flex;
+    flex-direction: row;
+}
+
 .starsContainer {
-    width: 100%;
+    flex-grow: 1;
+}
+
+.changeContainer {
+    position: relative;
+    display: inline-block;
+    flex-grow: 0;
+    font-size: 20px;
+    text-align: right;
+    border-bottom: 1px dotted black;
+    margin-bottom: 5px;
+}
+
+.changeDetails {
+    visibility: hidden;
+    background-color: black;
+    color: whitesmoke;
+    font-size: 10px;
+    text-align: center;
+    padding: 5px 20px 5px 0px;
+    border-radius: 3px;
+    position: absolute;
+    z-index: 1;
+    top: -5px;
+    left: 105%;
+}
+
+.changeContainer:hover .changeDetails {
+    visibility: visible;
 }
 
 .diaryEntry {
@@ -42,4 +75,12 @@
 
 .diaryStars {
     width: 2vw;
+}
+
+.react-calendar__tile--now {
+    background-color: lightblue;
+}
+
+.react-calendar__tile--active {
+    background-color: cyan;
 }

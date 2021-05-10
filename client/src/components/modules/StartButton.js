@@ -7,11 +7,10 @@ class StartButton extends React.Component {
         super(props);
     }
     render() {
-        console.log(this.props.userInfo);
         return (
             <div className="login" style={{zIndex:10}}>
                 <a href={this.props.userInfo === null ? "/auth/google" : "/home"}>
-                    <div className="button primary">
+                    <div className="button">
                         {this.props.userInfo === null ? "login" : "enter"}
                     </div>
                 </a>
