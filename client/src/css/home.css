@@ -77,6 +77,10 @@
     width: 2vw;
 }
 
+.calendarHasEntry {
+    background-color: lightgreen;
+}
+
 .react-calendar__tile--now {
     background-color: lightblue;
 }

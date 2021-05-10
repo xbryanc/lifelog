@@ -48,6 +48,13 @@ export default class Home extends Component {
                 <Calendar
                     onClickDay={e => this.calendarChange(e.toLocaleDateString())}
                     calendarType="US"
+                    tileClassName={properties => {
+                        let dateKey = properties.date.toLocaleDateString();
+                        if (this.state.diary.hasOwnProperty(dateKey)) {
+                            return "calendarHasEntry";
+                        }
+                        return null;
+                    }}
                 />
                 <div className="entryContainer">
                     <div className="diaryContainer">
