@@ -71,9 +71,9 @@ export default class Home extends Component {
                     tileClassName={properties => {
                         let dateKey = properties.date.toLocaleDateString();
                         if (this.state.diary.hasOwnProperty(dateKey)) {
-                            return "calendarHasEntry";
+                            return `rating${this.state.diary[dateKey].rating}`;
                         }
-                        return null;
+                        return "calendarCell";
                     }}
                 />
                 <div className="entryContainer">

@@ -86,16 +86,60 @@
     width: 70vw;
 }
 
-.calendarHasEntry {
-    background-color: lightgreen;
+.calendarCell {
+    padding: 0;
+}
+
+.rating0 {
+    background-color: darkgrey;
+}
+
+.rating1 {
+    background-color: #FF3300;
+}
+
+.rating2 {
+    background-color: #ff6600;
+}
+
+.rating3 {
+    background-color: #ff9900;
+}
+
+.rating4 {
+    background-color: #FFCC00;
+}
+
+.rating5 {
+    background-color: #FFFF00;
+}
+
+.rating6 {
+    background-color: #ccff00;
+}
+
+.rating7 {
+    background-color: #99ff00;
+}
+
+.rating8 {
+    background-color: #66ff00;
+}
+
+.rating9 {
+    background-color: #33ff00;
+}
+
+.rating10 {
+    background-color: #00FF00;
 }
 
 .react-calendar__tile--now {
-    background-color: lightblue;
+    border-color: magenta;
 }
 
 .react-calendar__tile--active {
-    background-color: cyan;
+    border-color: cyan;
 }
 
 .homePopupContainer {
