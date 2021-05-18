@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import Calendar from 'react-calendar';
+import classNames from 'classnames';
 
 import CONSTANTS from '../../../../constants';
 import '../../css/app.css';
@@ -20,7 +21,7 @@ Finance structure: object from date strings to:
         cost: Number,
         description: String,
         location: String,
-        tags: [Number], // index to a tag
+        tags: [String],
     }
 ]
 */
@@ -29,9 +30,28 @@ export default class Home extends Component {
     constructor(props) {
         super(props);
         let diaryCopy = Object.assign({}, this.props.userInfo.diary);
+        let tagsCopy = this.props.userInfo.tags ? this.props.userInfo.tags.slice() : [];
+        let financeCopy = {};
+        let originalFinance = this.props.userInfo.finance;
+        let newTransaction = Object.assign({}, CONSTANTS.EMPTY_TRANSACTION);
+        newTransaction.tags = [];
+        if (originalFinance) {
+            Object.keys(originalFinance).forEach(key => {
+                financeCopy[key] = [];
+                originalFinance[key].forEach(el => {
+                    let newEl = Object.assign({}, el);
+                    newEl.tags = el.tags.slice();
+                    financeCopy[key].push(newEl);
+                });
+            });
+        }
         this.state = {
             currentDate: new Date(Date.now()).toLocaleDateString(),
             diary: diaryCopy,
+            finance: financeCopy,
+            tags: tagsCopy,
+            newTransaction: newTransaction,
+            newTag: "",
             changes: 0,
             changeSet: [],
             keys: [],
@@ -51,6 +71,7 @@ export default class Home extends Component {
     }
     
     render() {
+        let transactions = this.state.finance.hasOwnProperty(this.state.selectedDate) ? this.state.finance[this.state.selectedDate] : [];
         return (
             <div className="homeContainer">
                 {!this.state.konami ? (null) :
@@ -107,7 +128,50 @@ export default class Home extends Component {
                         </div>
                     </div>
                     <div className="finContainer">
-                        Finance
+                        <div className="finTagsContainer">
+                            <div className="finTagsList">
+                                {this.state.tags.map((el, ind) => (
+                                    <div key={ind} className="finTag">
+                                        {el}
+                                        <div className="smallButton red" onClick={() => this.changeTag(el, "", true)}>x</div>
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="finTagCreate">
+                                <div className={classNames("smallButton", {"green": this.tagValid(this.state.newTag)})} onClick={this.addTag}>+</div>
+                                <input type="text" className="finTagEntry" name="tagEntry" id="tagEntry" placeholder="New Tag" value={this.state.newTag} onChange={e => this.updateTagField(e.target.value)} />
+                            </div>
+                        </div>
+                        <div className="finTransactionContainer">
+                            <div className="finTransactionList">
+                                {transactions.length == 0 ?
+                                "NO TRANSACTIONS"
+                                :
+                                transactions.map((el, ind) => (
+                                    <div key={ind} className="finTransaction">
+                                        {el.location} : {el.description}
+                                        <br />
+                                        {this.formatCost(el.cost)}
+                                        <br />
+                                        TAGS:
+                                        <ul>
+                                            {el.tags.map((tag, tagInd) => (
+                                                <li key={`tag${tagInd}`}>
+                                                    {tag}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                        <div className="smallButton red" onClick={() => this.deleteTransaction(ind)}>x</div>
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="finTransactionCreate">
+                                <input type="number" className="finCostEntry" name="costEntry" id="costEntry" value={this.state.newTransaction.cost} onChange={e => this.updateFinanceField("cost", e.target.value)} />
+                                <input type="text" className="finLocationEntry" name="locationEntry" id="locationEntry" placeholder="Location" value={this.state.newTransaction.location} onChange={e => this.updateFinanceField("location", e.target.value)} />
+                                <input type="text" className="finDescriptionEntry" name="descriptionEntry" id="descriptionEntry" placeholder="Description" value={this.state.newTransaction.description} onChange={e => this.updateFinanceField("description", e.target.value)} />
+                                <div className={classNames("smallButton", {"green": !this.newTransactionInvalid()})} onClick={this.addTransaction}>+</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -138,6 +202,111 @@ export default class Home extends Component {
         this.setState({
             changes: changes,
             changeSet: changeSet
+        });
+    }
+
+    formatCost = (costInPennies) => {
+        let dollar = costInPennies/100;
+        let cents = costInPennies % 100;
+        let rest = "";
+        if (cents === 0) {
+            rest = "00";
+        } else if (cents < 10) {
+            rest = `0${cents}`;
+        } else {
+            rest = `${cents}`;
+        }
+        return `$${dollar}.${rest}`;
+    }
+
+    tagValid = (tag) => {
+        return tag.length > 0 && this.state.tags.indexOf(tag) == -1;
+    }
+
+    addTag = () => {
+        if (!this.tagValid(this.state.newTag)) {
+            return;
+        }
+        let newTags = this.state.tags;
+        newTags.push(this.state.newTag);
+        this.setState({
+            tags: newTags,
+            newTag: "",
+        });
+    }
+
+    changeTag = (tagName, newTag, toRemove) => {
+        let newTags = this.state.tags;
+        let ind = newTags.indexOf(tagName);
+        if (ind == -1 || (!toRemove && !this.tagValid(newTag))) {
+            return;
+        }
+        if (toRemove) {
+            newTags.splice(ind, 1);
+        } else {
+            newTags[ind] = newTag;
+        }
+        let newFinance = this.state.finance;
+        Object.keys(newFinance).forEach(key => {
+            newFinance[key].forEach(el => {
+                let tagIndex = el.tags.indexOf(tagName);
+                if (tagList > -1) {
+                    if (toRemove) {
+                        el.tags.splice(tagIndex, 1);
+                    } else {
+                        el.tags[tagIndex] = newTag;
+                    }
+                }
+            });
+        });
+        this.setState({
+            tags: newTags,
+            finance: newFinance,
+        });
+    }
+
+    updateTagField = (value) => {
+        this.setState({
+            newTag: value,
+        });
+    }
+
+    updateFinanceField = (fieldName, value) => {
+        let newTransaction = this.state.newTransaction;
+        newTransaction[fieldName] = value;
+        this.setState({
+            newTransaction: newTransaction,
+        });
+    }
+
+    newTransactionInvalid = () => {
+        let newTransaction = this.state.newTransaction;
+        return newTransaction.description == "" || newTransaction.location == "";
+    }
+
+    addTransaction = () => {
+        if (this.newTransactionInvalid()) {
+            return;
+        }
+        let newTransaction = this.state.newTransaction;
+        let newFinance = this.state.finance;
+        if (!newFinance.hasOwnProperty(this.state.selectedDate)) {
+            newFinance[this.state.selectedDate] = [];
+        }
+        newFinance[this.state.selectedDate].push(newTransaction);
+        let refreshTransaction = Object.assign({}, CONSTANTS.EMPTY_TRANSACTION);
+        refreshTransaction.tags = [];
+        this.setState({
+            finance: newFinance,
+            newTransaction: refreshTransaction,
+        });
+    }
+
+    deleteTransaction = (ind) => {
+        let newFinance = this.state.finance;
+        newFinance[this.state.selectedDate].splice(ind);
+        this.setState({
+            finance: newFinance,
         });
     }
 
@@ -230,9 +399,11 @@ export default class Home extends Component {
 
     saveInfo = () => {
         let body = {
-            diary: this.state.diary
+            diary: this.state.diary,
+            tags: this.state.tags,
+            finance: this.state.finance,
         };
-        fetch("/api/publish_diary", {
+        fetch("/api/save_info", {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -243,7 +414,7 @@ export default class Home extends Component {
                 if (res.status === 200) {
                     window.location.reload();
                 } else {
-                    alert("There was an issue saving your entry. Please make sure you're logged in.")
+                    alert("There was an issue saving your entry. Please make sure you're logged in.");
                 }
             }
         )

@@ -28,12 +28,52 @@
     width: 50%;
     height: 100%;
     margin: 5px;
-    background-color: lightgreen;
 }
 
 .diaryHeader {
     display: flex;
     flex-direction: row;
+}
+
+.finTagsContainer {
+    border: 1px solid black;
+    border-radius: 5px;
+    padding: 5px;
+}
+
+.finTagsList {
+    display: flex;
+    flex-direction: row;
+}
+
+.finTagCreate {
+    display: flex;
+    flex-direction: row;
+}
+
+.finTag {
+    margin: 5px;
+    border: 1px solid black;
+    border-radius: 5px;
+}
+
+.finTransactionList {
+    border: 1px solid black;
+    border-radius: 5px;
+    padding: 5px;
+}
+
+.finTransaction {
+    border: 1px solid black;
+    border-radius: 5px;
+}
+
+.finTransactionCreate {
+    display: flex;
+    flex-direction: row;
+    border: 1px solid black;
+    border-radius: 5px;
+    padding: 5px;
 }
 
 .starsContainer {

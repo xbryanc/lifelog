@@ -25,10 +25,10 @@ router.get('/echo', function(req, res) {
     res.send({message: req.query.message});
 });
 
-router.post('/publish_diary',
+router.post('/save_info',
     connect.ensureLoggedIn(),
     function(req, res) {
-        User.findOneAndUpdate({_id: req.user._id}, {diary: req.body.diary}, function(err, user) {
+        User.updateOne({_id: req.user._id}, {diary: req.body.diary, finance: req.body.finance, tags: req.body.tags}, function(err, user) {
             if (err) console.log(error);
             res.send({});
         });
