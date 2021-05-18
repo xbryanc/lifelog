@@ -57,6 +57,14 @@
     border-radius: 5px;
 }
 
+.finTagName {
+    cursor: pointer;
+}
+
+.finTagName.selected {
+    background-color: lightgreen;
+}
+
 .finTransactionList {
     border: 1px solid black;
     border-radius: 5px;

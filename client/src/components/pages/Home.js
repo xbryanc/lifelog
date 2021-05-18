@@ -52,6 +52,7 @@ export default class Home extends Component {
             tags: tagsCopy,
             newTransaction: newTransaction,
             newTag: "",
+            selectedTag: "",
             changes: 0,
             changeSet: [],
             keys: [],
@@ -132,7 +133,9 @@ export default class Home extends Component {
                             <div className="finTagsList">
                                 {this.state.tags.map((el, ind) => (
                                     <div key={ind} className="finTag">
-                                        {el}
+                                        <div className={classNames("finTagName", {"selected": el == this.state.selectedTag})} onClick={() => this.selectTag(el)}>
+                                            {el}
+                                        </div>
                                         <div className="smallButton red" onClick={() => this.changeTag(el, "", true)}>x</div>
                                     </div>
                                 ))}
@@ -148,7 +151,7 @@ export default class Home extends Component {
                                 "NO TRANSACTIONS"
                                 :
                                 transactions.map((el, ind) => (
-                                    <div key={ind} className="finTransaction">
+                                    <div key={ind} className="finTransaction" onClick={() => this.toggleTag(ind)}>
                                         {el.location} : {el.description}
                                         <br />
                                         {this.formatCost(el.cost)}
@@ -206,16 +209,9 @@ export default class Home extends Component {
     }
 
     formatCost = (costInPennies) => {
-        let dollar = costInPennies/100;
+        let dollar = Math.floor(costInPennies / 100);
         let cents = costInPennies % 100;
-        let rest = "";
-        if (cents === 0) {
-            rest = "00";
-        } else if (cents < 10) {
-            rest = `0${cents}`;
-        } else {
-            rest = `${cents}`;
-        }
+        let rest = `${Math.floor(cents / 10)}${cents % 10}`;
         return `$${dollar}.${rest}`;
     }
 
@@ -250,7 +246,7 @@ export default class Home extends Component {
         Object.keys(newFinance).forEach(key => {
             newFinance[key].forEach(el => {
                 let tagIndex = el.tags.indexOf(tagName);
-                if (tagList > -1) {
+                if (tagIndex > -1) {
                     if (toRemove) {
                         el.tags.splice(tagIndex, 1);
                     } else {
@@ -261,6 +257,30 @@ export default class Home extends Component {
         });
         this.setState({
             tags: newTags,
+            finance: newFinance,
+            selectedTag: this.state.selectedTag === tagName ? "" : tagName,
+        });
+    }
+
+    selectTag = (tag) => {
+        this.setState({
+            selectedTag: this.state.selectedTag === tag ? "" : tag,
+        });
+    }
+
+    toggleTag = (transactionIndex) => {
+        if (this.state.selectedTag === "") {
+            return;
+        }
+        let newFinance = this.state.finance;
+        let tagList = newFinance[this.state.selectedDate][transactionIndex].tags;
+        let tagIndex = tagList.indexOf(this.state.selectedTag);
+        if (tagIndex === -1) {
+            tagList.push(this.state.selectedTag);
+        } else {
+            tagList.splice(tagIndex, 1);
+        }
+        this.setState({
             finance: newFinance,
         });
     }
@@ -304,7 +324,7 @@ export default class Home extends Component {
 
     deleteTransaction = (ind) => {
         let newFinance = this.state.finance;
-        newFinance[this.state.selectedDate].splice(ind);
+        newFinance[this.state.selectedDate].splice(ind, 1);
         this.setState({
             finance: newFinance,
         });
@@ -421,6 +441,9 @@ export default class Home extends Component {
     }
 
     handleKeyDown = (event) => {
+        if (event.key === "Escape") {
+            this.selectTag("");
+        }
         let keys = this.state.keys;
         keys.push(event.key.toLowerCase());
         keys = keys.slice(Math.max(keys.length - CONSTANTS.KONAMI_CODE.length, 0));
