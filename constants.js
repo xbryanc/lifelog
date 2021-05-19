@@ -6,6 +6,7 @@ const CONSTANTS = {
         description: "",
         location: "",
         tags: [],
+        show: false,
     },
     STAR_MAX: 10,
     INF: 1e18, // large number

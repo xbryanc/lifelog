@@ -22,6 +22,7 @@ Finance structure: object from date strings to:
         description: String,
         location: String,
         tags: [String],
+        show: Boolean,
     }
 ]
 */
@@ -136,7 +137,9 @@ export default class Home extends Component {
                                         <div className={classNames("finTagName", {"selected": el == this.state.selectedTag})} onClick={() => this.selectTag(el)}>
                                             {el}
                                         </div>
-                                        <div className="smallButton red" onClick={() => this.changeTag(el, "", true)}>x</div>
+                                        <div className="finTagIcons">
+                                            <div className="smallButton red" onClick={() => this.changeTag(el, "", true)}>x</div>
+                                        </div>
                                     </div>
                                 ))}
                             </div>
@@ -147,24 +150,43 @@ export default class Home extends Component {
                         </div>
                         <div className="finTransactionContainer">
                             <div className="finTransactionList">
+                                {this.financeChanged() ?
+                                <div className="finTransactionChanged">
+                                    *
+                                </div>
+                                :
+                                null
+                                }
                                 {transactions.length == 0 ?
                                 "NO TRANSACTIONS"
                                 :
                                 transactions.map((el, ind) => (
                                     <div key={ind} className="finTransaction" onClick={() => this.toggleTag(ind)}>
-                                        {el.location} : {el.description}
-                                        <br />
-                                        {this.formatCost(el.cost)}
-                                        <br />
-                                        TAGS:
-                                        <ul>
-                                            {el.tags.map((tag, tagInd) => (
-                                                <li key={`tag${tagInd}`}>
-                                                    {tag}
-                                                </li>
-                                            ))}
-                                        </ul>
-                                        <div className="smallButton red" onClick={() => this.deleteTransaction(ind)}>x</div>
+                                        <div className="transactionHeader">
+                                            <div className="transactionLocation" onClick={() => this.toggleShow(ind)}>
+                                                {el.location}
+                                            </div>
+                                            <div className="transactionTagsList" onClick={() => this.toggleShow(ind)}>
+                                                {el.tags.map((tag, tagInd) => (
+                                                    <div key={`tag${tagInd}`} className="transactionTag">
+                                                        {tag}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            <div className="transactionCost" onClick={() => this.toggleShow(ind)}>
+                                                {this.formatCost(el.cost)}
+                                            </div>
+                                            <div className="transactionIcons">
+                                                <div className="smallButton red" onClick={() => this.deleteTransaction(ind)}>x</div>
+                                            </div>
+                                        </div>
+                                        {el.show ?
+                                        <div className="transactionBody">
+                                            {el.description}
+                                        </div>
+                                        :
+                                        null
+                                        }
                                     </div>
                                 ))}
                             </div>
@@ -208,11 +230,52 @@ export default class Home extends Component {
         });
     }
 
+    financeChanged = () => {
+        let currentFinance = this.state.finance[this.state.selectedDate] || [];
+        let prevFinance = this.props.userInfo.finance[this.state.selectedDate] || [];
+        if (currentFinance.length != prevFinance.length) {
+            return true;
+        }
+        let changed = false;
+        currentFinance.forEach((_, ind) => {
+            if (changed) {
+                return;
+            }
+            let cur = currentFinance[ind];
+            let prev = prevFinance[ind];
+            if (cur.cost !== prev.cost || cur.description !== prev.description || cur.location !== prev.location || cur.show !== prev.show) {
+                changed = true;
+            }
+            let curTags = cur.tags;
+            let prevTags = prev.tags;
+            if (curTags.length != prevTags.length) {
+                changed = true;
+            }
+            curTags.forEach((_, ind) => {
+                if (curTags[ind] != prevTags[ind]) {
+                    changed = true;
+                }
+            });
+        })
+        return changed;
+    }
+
     formatCost = (costInPennies) => {
         let dollar = Math.floor(costInPennies / 100);
         let cents = costInPennies % 100;
         let rest = `${Math.floor(cents / 10)}${cents % 10}`;
         return `$${dollar}.${rest}`;
+    }
+
+    toggleShow = (ind) => {
+        if (this.state.selectedTag !== "") {
+            return;
+        }
+        let newFinance = this.state.finance;
+        newFinance[this.state.selectedDate][ind].show = !newFinance[this.state.selectedDate][ind].show;
+        this.setState({
+            finance: newFinance,
+        });
     }
 
     tagValid = (tag) => {
@@ -232,6 +295,12 @@ export default class Home extends Component {
     }
 
     changeTag = (tagName, newTag, toRemove) => {
+        if (toRemove) {
+            let intended = confirm(`Delete tag "${tagName}"?`);
+            if (!intended) {
+                return;
+            }
+        }
         let newTags = this.state.tags;
         let ind = newTags.indexOf(tagName);
         if (ind == -1 || (!toRemove && !this.tagValid(newTag))) {
