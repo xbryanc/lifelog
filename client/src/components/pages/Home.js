@@ -22,7 +22,13 @@ Finance structure: object from date strings to:
         description: String,
         location: String,
         tags: [String],
-        show: Boolean,
+        ---
+        show: Boolean (always set to False),
+        editing: Boolean,
+        editCost: Number,
+        editDescription: String,
+        editLocation: String,
+        ---
     }
 ]
 */
@@ -78,7 +84,7 @@ export default class Home extends Component {
             <div className="homeContainer">
                 {!this.state.konami ? (null) :
                     <div className="homePopupContainer" onClick={this.toggleKonami}>
-                        <div className="homePopup" onClick={(e) => { e.stopPropagation(); }}>
+                        <div className="homePopup" onClick={e => e.stopPropagation()}>
                             Enter bulk entries:
                             <textarea className="bulkEntry" name="bulkEntry" id="bulkEntry" onChange={this.updateBulk} />
                             <div className="button saveButton" onClick={this.saveBulk}>
@@ -138,13 +144,13 @@ export default class Home extends Component {
                                             {el}
                                         </div>
                                         <div className="finTagIcons">
-                                            <div className="smallButton red" onClick={() => this.changeTag(el, "", true)}>x</div>
+                                            <div className="smallButton text red" onClick={() => this.changeTag(el, "", true)}>x</div>
                                         </div>
                                     </div>
                                 ))}
                             </div>
                             <div className="finTagCreate">
-                                <div className={classNames("smallButton", {"green": this.tagValid(this.state.newTag)})} onClick={this.addTag}>+</div>
+                                <div className={classNames("smallButton text", {"green": this.tagValid(this.state.newTag)})} onClick={this.addTag}>+</div>
                                 <input type="text" className="finTagEntry" name="tagEntry" id="tagEntry" placeholder="New Tag" value={this.state.newTag} onChange={e => this.updateTagField(e.target.value)} />
                             </div>
                         </div>
@@ -163,26 +169,43 @@ export default class Home extends Component {
                                 transactions.map((el, ind) => (
                                     <div key={ind} className="finTransaction" onClick={() => this.toggleTag(ind)}>
                                         <div className="transactionHeader">
-                                            <div className="transactionLocation" onClick={() => this.toggleShow(ind)}>
-                                                {el.location}
+                                            <div className="transactionLocation" onClick={() => this.toggleShow(el)}>
+                                                {el.editing ?
+                                                <input type="text" className="transactionEditEntry" name="transactionLocationEntry" id="transactionLocationEntry" value={el.editLocation} onChange={e => this.editTransaction(el, "editLocation", e.target.value)} onClick={e => e.stopPropagation()} />
+                                                :
+                                                el.location
+                                                }
                                             </div>
-                                            <div className="transactionTagsList" onClick={() => this.toggleShow(ind)}>
+                                            <div className="transactionTagsList" onClick={() => this.toggleShow(el)}>
                                                 {el.tags.map((tag, tagInd) => (
                                                     <div key={`tag${tagInd}`} className="transactionTag">
                                                         {tag}
                                                     </div>
                                                 ))}
                                             </div>
-                                            <div className="transactionCost" onClick={() => this.toggleShow(ind)}>
-                                                {this.formatCost(el.cost)}
+                                            <div className={classNames("transactionCost", {"zero": !el.editing && (!el.cost || parseInt(el.cost) === 0)})} onClick={() => this.toggleShow(el)}>
+                                                {el.editing ?
+                                                <input type="number" className="transactionEditEntry" name="transactionCostEntry" id="transactionCostEntry" value={el.editCost} onChange={e => this.editTransaction(el, "editCost", e.target.value)} onClick={e => e.stopPropagation()} />
+                                                :
+                                                this.formatCost(el.cost)
+                                                }
                                             </div>
                                             <div className="transactionIcons">
-                                                <div className="smallButton red" onClick={() => this.deleteTransaction(ind)}>x</div>
+                                                <img
+                                                    className="smallButton buttonPicture"
+                                                    onClick={el.editing ? () => this.commitTransactionEdit(el) : () => this.startTransactionEdit(el)}
+                                                    src={el.editing ? "/media/check.svg" : "/media/pencil.svg"}
+                                                />
+                                                <div className="smallButton text red" onClick={() => this.deleteTransaction(ind)}>x</div>
                                             </div>
                                         </div>
                                         {el.show ?
                                         <div className="transactionBody">
-                                            {el.description}
+                                            {el.editing ?
+                                            <textarea type="text" className="transactionEditDescription" name="transactionDescriptionEntry" id="transactionDescriptionEntry" value={el.editDescription} onChange={e => this.editTransaction(el, "editDescription", e.target.value)} onClick={e => e.stopPropagation()} />
+                                            :
+                                            el.description
+                                            }
                                         </div>
                                         :
                                         null
@@ -194,7 +217,7 @@ export default class Home extends Component {
                                 <input type="number" className="finCostEntry" name="costEntry" id="costEntry" value={this.state.newTransaction.cost} onChange={e => this.updateFinanceField("cost", e.target.value)} />
                                 <input type="text" className="finLocationEntry" name="locationEntry" id="locationEntry" placeholder="Location" value={this.state.newTransaction.location} onChange={e => this.updateFinanceField("location", e.target.value)} />
                                 <input type="text" className="finDescriptionEntry" name="descriptionEntry" id="descriptionEntry" placeholder="Description" value={this.state.newTransaction.description} onChange={e => this.updateFinanceField("description", e.target.value)} />
-                                <div className={classNames("smallButton", {"green": !this.newTransactionInvalid()})} onClick={this.addTransaction}>+</div>
+                                <div className={classNames("smallButton text", {"green": !this.newTransactionInvalid()})} onClick={this.addTransaction}>+</div>
                             </div>
                         </div>
                     </div>
@@ -243,7 +266,7 @@ export default class Home extends Component {
             }
             let cur = currentFinance[ind];
             let prev = prevFinance[ind];
-            if (cur.cost !== prev.cost || cur.description !== prev.description || cur.location !== prev.location || cur.show !== prev.show) {
+            if (cur.cost !== prev.cost || cur.description !== prev.description || cur.location !== prev.location) {
                 changed = true;
             }
             let curTags = cur.tags;
@@ -260,6 +283,33 @@ export default class Home extends Component {
         return changed;
     }
 
+    startTransactionEdit = (transaction) => {
+        transaction.editing = true;
+        transaction.editCost = transaction.cost;
+        transaction.editLocation = transaction.location;
+        transaction.editDescription = transaction.description;
+        this.setState({
+            finance: this.state.finance,
+        })
+    }
+
+    commitTransactionEdit = (transaction) => {
+        transaction.editing = false;
+        transaction.cost = transaction.editCost;
+        transaction.location = transaction.editLocation;
+        transaction.description = transaction.editDescription;
+        this.setState({
+            finance: this.state.finance,
+        });
+    }
+
+    editTransaction = (transaction, fieldName, value) => {
+        transaction[fieldName] = value;
+        this.setState({
+            finance: this.state.finance,
+        });
+    }
+
     formatCost = (costInPennies) => {
         let dollar = Math.floor(costInPennies / 100);
         let cents = costInPennies % 100;
@@ -267,14 +317,13 @@ export default class Home extends Component {
         return `$${dollar}.${rest}`;
     }
 
-    toggleShow = (ind) => {
+    toggleShow = (transaction) => {
         if (this.state.selectedTag !== "") {
             return;
         }
-        let newFinance = this.state.finance;
-        newFinance[this.state.selectedDate][ind].show = !newFinance[this.state.selectedDate][ind].show;
+        transaction.show = !transaction.show;
         this.setState({
-            finance: newFinance,
+            finance: this.state.finance,
         });
     }
 
@@ -487,6 +536,17 @@ export default class Home extends Component {
     }
 
     saveInfo = () => {
+        let finance = this.state.finance;
+        Object.keys(finance).forEach(date => {
+            let transactionList = finance[date];
+            transactionList.forEach(t => {
+                delete t.show;
+                delete t.editing;
+                delete t.editCost;
+                delete t.editLocation;
+                delete t.editDescription;
+            });
+        });
         let body = {
             diary: this.state.diary,
             tags: this.state.tags,

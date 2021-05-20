@@ -141,11 +141,27 @@
     justify-content: center;
 }
 
+.transactionCost.zero {
+    color: red;
+}
+
+.transactionEditEntry {
+    width: 100%;
+}
+
+.transactionEditDescription {
+    width: 100%;
+}
+
+.buttonPicture {
+    width: 30px;
+}
+
 .transactionIcons {
     flex-grow: 0;
-    padding: 3px;
+    padding: 5px;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     justify-content: center;
 }
 
