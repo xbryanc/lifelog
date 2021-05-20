@@ -61,6 +61,9 @@
     border: 1px solid black;
     border-radius: 0 5px 5px 0;
     padding: 3px;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
 }
 
 .finTagName {
@@ -97,7 +100,8 @@
     padding: 5px;
 }
 
-.finTransactionChanged {
+.finChanged {
+    font-weight: bold;
     color: orange;
 }
 
