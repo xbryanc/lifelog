@@ -35,6 +35,21 @@
     flex-direction: row;
 }
 
+.finHeader {
+    display: flex;
+    flex-direction: row;
+}
+
+.finHeaderMain {
+    display: flex;
+    flex-direction: row;
+    flex-grow: 1;
+}
+
+.finHeaderSecondary {
+    flex-grow: 0;
+}
+
 .finTagsContainer {
     border: 1px solid black;
     border-radius: 5px;
@@ -80,7 +95,7 @@
     background-color: lightgreen;
 }
 
-.finTransactionList {
+.finTransactionContainer {
     border: 1px solid black;
     border-radius: 5px;
     padding: 5px;
@@ -102,6 +117,7 @@
 
 .finChanged {
     font-weight: bold;
+    font-size: 20px;
     color: orange;
 }
 

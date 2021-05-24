@@ -40,8 +40,6 @@ export default class Home extends Component {
         let tagsCopy = this.props.userInfo.tags ? this.props.userInfo.tags.slice() : [];
         let financeCopy = {};
         let originalFinance = this.props.userInfo.finance;
-        let newTransaction = Object.assign({}, CONSTANTS.EMPTY_TRANSACTION);
-        newTransaction.tags = [];
         if (originalFinance) {
             Object.keys(originalFinance).forEach(key => {
                 financeCopy[key] = [];
@@ -58,7 +56,6 @@ export default class Home extends Component {
             finance: financeCopy,
             tags: tagsCopy,
             tagEdits: {},
-            newTransaction: newTransaction,
             newTag: "",
             selectedTag: "",
             changes: 0,
@@ -138,14 +135,17 @@ export default class Home extends Component {
                     </div>
                     <div className="finContainer">
                         <div className="finTagsContainer">
+                            <div className="finHeader">
+                                <div className="finHeaderMain">
+                                    TAGS
+                                    {this.tagsChanged() ?
+                                    <div className="finChanged">*</div>
+                                    :
+                                    null
+                                    }
+                                </div>
+                            </div>
                             <div className="finTagsList">
-                                TAGS
-                                <br />
-                                {this.tagsChanged() ?
-                                <div className="finChanged">*</div>
-                                :
-                                null
-                                }
                                 {this.state.tags.map((el, ind) => {
                                     let editing = this.state.tagEdits.hasOwnProperty(el);
                                     return (
@@ -175,14 +175,20 @@ export default class Home extends Component {
                             </div>
                         </div>
                         <div className="finTransactionContainer">
+                            <div className="finHeader">
+                                <div className="finHeaderMain">
+                                    TRANSACTIONS
+                                    {this.financeChanged(this.state.selectedDate) ?
+                                    <div className="finChanged">*</div>
+                                    :
+                                    null
+                                    }
+                                </div>
+                                <div className="finHeaderSecondary">
+                                    <div className="smallButton text green" onClick={this.addTransaction}>+</div>
+                                </div>
+                            </div>
                             <div className="finTransactionList">
-                                TRANSACTIONS
-                                <br />
-                                {this.financeChanged() ?
-                                <div className="finChanged">*</div>
-                                :
-                                null
-                                }
                                 {transactions.map((el, ind) => (
                                     <div key={ind} className="finTransaction">
                                         <div className="transactionHeader">
@@ -230,12 +236,6 @@ export default class Home extends Component {
                                     </div>
                                 ))}
                             </div>
-                            <div className="finTransactionCreate">
-                                <input type="number" className="finCostEntry" name="costEntry" id="costEntry" value={this.state.newTransaction.cost} onChange={e => this.updateFinanceField("cost", e.target.value)} />
-                                <input type="text" className="finLocationEntry" name="locationEntry" id="locationEntry" placeholder="Location" value={this.state.newTransaction.location} onChange={e => this.updateFinanceField("location", e.target.value)} />
-                                <input type="text" className="finDescriptionEntry" name="descriptionEntry" id="descriptionEntry" placeholder="Description" value={this.state.newTransaction.description} onChange={e => this.updateFinanceField("description", e.target.value)} />
-                                <div className={classNames("smallButton text", {"green": !this.newTransactionInvalid()})} onClick={this.addTransaction}>+</div>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -244,17 +244,19 @@ export default class Home extends Component {
     }
 
     calculateChanges = () => {
-        let newSet = new Set(Object.keys(this.state.diary));
-        let totalSet = new Set(Object.keys(this.props.userInfo.diary));
-        newSet.forEach(key => {
-            totalSet.add(key);
-        });
+        let totalSet = new Set([
+            ...Object.keys(this.state.diary),
+            ...Object.keys(this.props.userInfo.diary),
+            ...Object.keys(this.state.finance),
+            ...Object.keys(this.props.userInfo.finance),
+        ]);
+        console.log(totalSet);
         let changes = 0;
         let changeSet = [];
         totalSet.forEach(key => {
             let curEntry = this.state.diary[key];
             let prevEntry = this.props.userInfo.diary[key];
-            if (curEntry != prevEntry) {
+            if (curEntry != prevEntry || this.financeChanged(key)) {
                 changes++;
                 changeSet.push(key);
             }
@@ -270,9 +272,9 @@ export default class Home extends Component {
         });
     }
 
-    financeChanged = () => {
-        let currentFinance = this.state.finance[this.state.selectedDate] || [];
-        let prevFinance = this.props.userInfo.finance[this.state.selectedDate] || [];
+    financeChanged = (dateOfInterest) => {
+        let currentFinance = this.state.finance[dateOfInterest] || [];
+        let prevFinance = this.props.userInfo.finance[dateOfInterest] || [];
         if (currentFinance.length != prevFinance.length) {
             return true;
         }
@@ -334,6 +336,7 @@ export default class Home extends Component {
         this.setState({
             finance: this.state.finance,
         });
+        this.calculateChanges();
     }
 
     editTransaction = (transaction, fieldName, value) => {
@@ -488,21 +491,17 @@ export default class Home extends Component {
     }
 
     addTransaction = () => {
-        if (this.newTransactionInvalid()) {
-            return;
-        }
-        let newTransaction = this.state.newTransaction;
         let newFinance = this.state.finance;
         if (!newFinance.hasOwnProperty(this.state.selectedDate)) {
             newFinance[this.state.selectedDate] = [];
         }
+        let newTransaction = Object.assign({}, CONSTANTS.EMPTY_TRANSACTION);
+        newTransaction.tags = [];
         newFinance[this.state.selectedDate].push(newTransaction);
-        let refreshTransaction = Object.assign({}, CONSTANTS.EMPTY_TRANSACTION);
-        refreshTransaction.tags = [];
         this.setState({
             finance: newFinance,
-            newTransaction: refreshTransaction,
         });
+        this.calculateChanges();
     }
 
     deleteTransaction = (ind) => {
@@ -511,6 +510,7 @@ export default class Home extends Component {
         this.setState({
             finance: newFinance,
         });
+        this.calculateChanges();
     }
 
     createStars = () => {
