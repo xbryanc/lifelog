@@ -59,6 +59,7 @@
 .finTagsList {
     display: flex;
     flex-direction: row;
+    flex-wrap: wrap;
 }
 
 .finTagCreate {
