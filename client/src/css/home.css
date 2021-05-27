@@ -12,7 +12,6 @@
 .entryContainer {
     display: flex;
     flex-direction: row;
-    align-items: center;
     justify-content: center;
     width: 100%;
     padding: 0 5vw;
@@ -239,6 +238,7 @@
 
 .homeCalendar {
     width: 70vw;
+    margin: 20px 0;
 }
 
 .calendarCell {
@@ -289,12 +289,22 @@
     background-color: #00FF00;
 }
 
+.react-calendar__tile {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+}
+
 .react-calendar__tile--now {
     border-color: magenta;
 }
 
 .react-calendar__tile--active {
     border-color: cyan;
+}
+
+.calendarIncomplete {
+    color: purple;
 }
 
 .homePopupContainer {

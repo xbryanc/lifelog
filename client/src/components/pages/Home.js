@@ -102,6 +102,21 @@ export default class Home extends Component {
                         }
                         return "calendarCell";
                     }}
+                    tileContent={properties => {
+                        let dateKey = properties.date.toLocaleDateString();
+                        if (this.state.finance.hasOwnProperty(dateKey)) {
+                            let curTransactions = this.state.finance[dateKey];
+                            let incomplete = false;
+                            curTransactions.forEach(el => {
+                                if (!el.cost || parseInt(el.cost) === 0 || el.tags.length === 0) {
+                                    incomplete = true;
+                                    return;
+                                }
+                            });
+                            return incomplete ? <div className="calendarIncomplete">!</div> : null;
+                        }
+                        return null;
+                    }}
                 />
                 <div className="entryContainer">
                     <div className="diaryContainer">
@@ -447,6 +462,7 @@ export default class Home extends Component {
             selectedTag: nextSelectedTag,
             tagEdits: newTagEdits,
         });
+        this.calculateChanges();
     }
 
     selectTag = (tag) => {
@@ -469,6 +485,7 @@ export default class Home extends Component {
         this.setState({
             finance: this.state.finance,
         });
+        this.calculateChanges();
     }
 
     updateTagField = (value) => {
