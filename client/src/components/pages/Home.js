@@ -58,11 +58,10 @@ export default class Home extends Component {
             tagEdits: {},
             newTag: "",
             selectedTag: "",
-            changes: 0,
-            changeSet: [],
             keys: [],
             konami: false,
             bulkPaste: "",
+            hoverDetails: false,
         }
     }
     
@@ -77,7 +76,42 @@ export default class Home extends Component {
     }
     
     render() {
+        let totalSet = new Set([
+            ...Object.keys(this.state.diary),
+            ...Object.keys(this.props.userInfo.diary),
+            ...Object.keys(this.state.finance),
+            ...Object.keys(this.props.userInfo.finance),
+        ]);
+        let changes = 0;
+        let changeSet = [];
+        totalSet.forEach(key => {
+            let curEntry = this.state.diary[key];
+            let prevEntry = this.props.userInfo.diary[key];
+            if (curEntry != prevEntry || this.financeChanged(key)) {
+                changes++;
+                changeSet.push(key);
+            }
+        });
+        changeSet.sort((a, b) => {
+            let dateA = new Date(a);
+            let dateB = new Date(b);
+            return dateA < dateB;
+        });
         let transactions = this.state.finance.hasOwnProperty(this.state.selectedDate) ? this.state.finance[this.state.selectedDate] : [];
+        let incompleteDates = new Set();
+        Object.keys(this.state.finance).forEach(dateKey => {
+            let curTransactions = this.state.finance[dateKey];
+            let incomplete = false;
+            curTransactions.forEach(el => {
+                if (!el.cost || parseInt(el.cost) === 0 || el.tags.length === 0) {
+                    incomplete = true;
+                    return;
+                }
+            });
+            if (incomplete) {
+                incompleteDates.add(dateKey);
+            }
+        })
         return (
             <div className="homeContainer">
                 {!this.state.konami ? (null) :
@@ -97,25 +131,14 @@ export default class Home extends Component {
                     calendarType="US"
                     tileClassName={properties => {
                         let dateKey = properties.date.toLocaleDateString();
-                        if (this.state.diary.hasOwnProperty(dateKey)) {
+                        if (properties.view === "month" && this.state.diary.hasOwnProperty(dateKey)) {
                             return `rating${this.state.diary[dateKey].rating}`;
                         }
                         return "calendarCell";
                     }}
                     tileContent={properties => {
                         let dateKey = properties.date.toLocaleDateString();
-                        if (this.state.finance.hasOwnProperty(dateKey)) {
-                            let curTransactions = this.state.finance[dateKey];
-                            let incomplete = false;
-                            curTransactions.forEach(el => {
-                                if (!el.cost || parseInt(el.cost) === 0 || el.tags.length === 0) {
-                                    incomplete = true;
-                                    return;
-                                }
-                            });
-                            return incomplete ? <div className="calendarIncomplete">!</div> : null;
-                        }
-                        return null;
+                        return incompleteDates.has(dateKey) ? <div className={classNames("calendarIncomplete", {"details" : this.state.hoverDetails})}>!</div> : null;
                     }}
                 />
                 <div className="entryContainer">
@@ -124,16 +147,16 @@ export default class Home extends Component {
                             <div className="starsContainer">
                                 {this.state.selectedDate}: {this.createStars()}
                             </div>
-                            <div className="changeContainer">
-                                {!this.state.diaryText ? 0 : this.state.diaryText.length} / {this.state.changes}
-                                {this.state.changes == 0 ?
+                            <div className="changeContainer" onMouseEnter={() => this.setDetails(true)} onMouseLeave={() => this.setDetails(false)}>
+                                {!this.state.diaryText ? 0 : this.state.diaryText.length} / {changes} / {incompleteDates.size}
+                                {changes == 0 ?
                                 <div className="changeDetails">
-                                    letters / changes
+                                    letters / changes / incomplete
                                 </div>
                                 :
                                 <div className="changeDetails">
                                     <ul>
-                                        {this.state.changeSet.map((el, ind) => (
+                                        {changeSet.map((el, ind) => (
                                         <li key={ind}>
                                             {el}
                                         </li>
@@ -258,35 +281,6 @@ export default class Home extends Component {
         );
     }
 
-    calculateChanges = () => {
-        let totalSet = new Set([
-            ...Object.keys(this.state.diary),
-            ...Object.keys(this.props.userInfo.diary),
-            ...Object.keys(this.state.finance),
-            ...Object.keys(this.props.userInfo.finance),
-        ]);
-        console.log(totalSet);
-        let changes = 0;
-        let changeSet = [];
-        totalSet.forEach(key => {
-            let curEntry = this.state.diary[key];
-            let prevEntry = this.props.userInfo.diary[key];
-            if (curEntry != prevEntry || this.financeChanged(key)) {
-                changes++;
-                changeSet.push(key);
-            }
-        });
-        changeSet.sort((a, b) => {
-            let dateA = new Date(a);
-            let dateB = new Date(b);
-            return dateA < dateB;
-        });
-        this.setState({
-            changes: changes,
-            changeSet: changeSet
-        });
-    }
-
     financeChanged = (dateOfInterest) => {
         let currentFinance = this.state.finance[dateOfInterest] || [];
         let prevFinance = this.props.userInfo.finance[dateOfInterest] || [];
@@ -351,7 +345,6 @@ export default class Home extends Component {
         this.setState({
             finance: this.state.finance,
         });
-        this.calculateChanges();
     }
 
     editTransaction = (transaction, fieldName, value) => {
@@ -366,6 +359,12 @@ export default class Home extends Component {
         let cents = costInPennies % 100;
         let rest = `${Math.floor(cents / 10)}${cents % 10}`;
         return `$${dollar}.${rest}`;
+    }
+
+    setDetails = (showing) => {
+        this.setState({
+            hoverDetails: showing,
+        });
     }
 
     toggleShow = (transaction) => {
@@ -462,7 +461,6 @@ export default class Home extends Component {
             selectedTag: nextSelectedTag,
             tagEdits: newTagEdits,
         });
-        this.calculateChanges();
     }
 
     selectTag = (tag) => {
@@ -485,7 +483,6 @@ export default class Home extends Component {
         this.setState({
             finance: this.state.finance,
         });
-        this.calculateChanges();
     }
 
     updateTagField = (value) => {
@@ -518,7 +515,6 @@ export default class Home extends Component {
         this.setState({
             finance: newFinance,
         });
-        this.calculateChanges();
     }
 
     deleteTransaction = (ind) => {
@@ -527,7 +523,6 @@ export default class Home extends Component {
         this.setState({
             finance: newFinance,
         });
-        this.calculateChanges();
     }
 
     createStars = () => {
@@ -587,7 +582,6 @@ export default class Home extends Component {
             rating: rating,
             displayRating: rating,
         });
-        this.calculateChanges();
     }
 
     updateBulk = (e) => {
