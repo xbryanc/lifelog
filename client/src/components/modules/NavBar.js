@@ -14,6 +14,7 @@ export default class NavBar extends React.Component {
 
         this.state = {
             width: 0,
+            path: window.location.pathname,
         }
     }
 
@@ -22,12 +23,15 @@ export default class NavBar extends React.Component {
         window.addEventListener('resize', this.updateWidth);
     }
 
+    componentWillUnmount() {
+        window.removeEventListener('resize', this.updateWidth);
+    }
+
     render() {
         if (!this.props.userInfo) return null;
-        let curPath = window.location.pathname;
         if (this.state.width <= CONSTANTS.NAVBAR_HAMBURGER_WIDTH_THRESHOLD) {
             return (
-                <div>
+                <div onClick={this.updatePath}>
                     <nav className="navbar">
                         <Link to="/" className="navbar-brand nav-link">lifelog</Link>
 
@@ -37,13 +41,13 @@ export default class NavBar extends React.Component {
                         </button>
 
                         <div className="collapse navbar-collapse" id="navbarExpandedContent">
-                            <Link to={{pathname: "/home", state: {status: "reload"}}} className={classNames("nav-item", "nav-link", {"nav-current": curPath.startsWith("/home")})}>Home</Link>
+                            <Link to="/home" className={classNames("nav-item", "nav-link", {"nav-current": this.state.path.startsWith("/home")})}>Home</Link>
                             <div className="nav-item dropdown">
-                                <img className="nav-link dropdown-toggle profileIcon" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" src={icon}/>
+                                <img className={classNames("nav-link dropdown-toggle profileIcon", {"nav-current": this.state.path.startsWith("/profile")})} id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" src={icon}/>
                                 <div className="dropdown-menu dropdown-menu-left" aria-labelledby="navbarDropdown">
                                     <div className="helpDiv">
                                     </div>
-                                    <Link to={"/profile/" + this.props.userInfo._id} className="dropdown-item">Profile</Link>
+                                    <Link to="/profile" className="dropdown-item">Profile</Link>
                                     <a className="dropdown-item" href="/logout" onClick={this.props.logout}>Logout</a>
                                 </div>
                             </div>
@@ -53,18 +57,18 @@ export default class NavBar extends React.Component {
             );
         }
         return (
-            <div>
+            <div onClick={this.updatePath}>
                 <nav className="navbar navbar-expand-lg">
                     <Link to="/" className="navbar-brand nav-link">lifelog</Link>
                     <div className="navbar-nav">
                         <React.Fragment>
-                            <Link to={{pathname: "/home", state: {status: "reload"}}} className={classNames("nav-item", "nav-link", {"nav-current": curPath.startsWith("/home")})}>Home</Link>
+                            <Link to="/home" className={classNames("nav-item", "nav-link", {"nav-current": this.state.path.startsWith("/home")})}>Home</Link>
                             <div className="nav-item dropdown">
-                                <img className={"nav-link dropdown-toggle profileIcon" + (curPath.startsWith("/profile/" + this.props.userInfo._id) ? " nav-current" : "")} id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" src={icon}/>
+                                <img className={classNames("nav-link dropdown-toggle profileIcon", {"nav-current": this.state.path.startsWith("/profile")})} id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" src={icon}/>
                                 <div className="dropdown-menu dropdown-menu-right" aria-labelledby="navbarDropdown">
                                     <div className="helpDiv">
                                     </div>
-                                    <Link to={"/profile/" + this.props.userInfo._id} className="dropdown-item">Profile</Link>
+                                    <Link to="/profile" className="dropdown-item">Profile</Link>
                                     <a className="dropdown-item" href="/logout" onClick={this.props.logout}>Logout</a>
                                 </div>
                             </div>
@@ -78,6 +82,12 @@ export default class NavBar extends React.Component {
     updateWidth = () => {
         this.setState({
             width: window.innerWidth,
+        });
+    }
+
+    updatePath = () => {
+        this.setState({
+            path: window.location.pathname,
         });
     }
 }

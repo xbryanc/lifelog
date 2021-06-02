@@ -1,0 +1,166 @@
+.profileContainer {
+    display: flex;
+    padding-top: 8vh;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.subContainer {
+    border: 1px solid black;
+    border-radius: 5px;
+    padding: 5px;
+    width: 80%;
+}
+
+.subTitle {
+    display: flex;
+    flex-direction: row;
+}
+
+.subTitleMain {
+    display: flex;
+    flex-direction: row;
+    flex-grow: 1;
+}
+
+.subTitleSecondary {
+    flex-grow: 0;
+}
+
+.subHeader {
+    display: flex;
+    flex-direction: row;
+    border-bottom: 1px solid black;
+    padding: 0px 3px;
+}
+
+.subLocation {
+    cursor: pointer;
+    flex-grow: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 0px 5px;
+}
+
+.subTagsList {
+    cursor: pointer;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: row;
+}
+
+.subTag {
+    border: 1px solid black;
+    border-radius: 5px;
+    margin: 5px;
+    padding: 5px;
+}
+
+.subCost {
+    cursor: pointer;
+    flex-grow: 0;
+    border-left: 1px solid black;
+    border-right: 1px solid black;
+    padding: 0px 3px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.subCost.zero {
+    color: red;
+}
+
+.subEntry {
+    border: 1px solid black;
+    border-radius: 5px;
+    margin-top: 3px;
+}
+
+.subBody {
+    padding: 5px 10px;
+    border-bottom: 1px solid black;
+}
+
+.subIcons {
+    flex-grow: 0;
+    padding: 5px;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+}
+
+.subEditEntry {
+    width: 100%;
+}
+
+.subEditDescription {
+    width: 100%;
+}
+
+.subTimeFrame {
+    flex-grow: 0;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    border-left: 1px solid black;
+    border-right: 1px solid black;
+    padding: 0px 5px;
+    cursor: pointer;
+}
+
+.subTimeFrame.editing {
+    cursor: default;
+}
+
+.subTimeStart.editing {
+    cursor: pointer;
+}
+
+.subTimeEnd.editing {
+    cursor: pointer;
+}
+
+.subTimeDash {
+    margin: 0px 5px;
+}
+
+.subPopupContainer {
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    margin: auto;
+    z-index: 150;
+}
+
+.subPopup {
+    display: flex;
+    flex-direction: column;
+    position: absolute;
+    left: 10%;
+    right: 10%;
+    top: 10%;
+    bottom: 10%;
+    margin: auto;
+    background-color: whitesmoke;
+    border: 1px solid #383838;
+    border-radius: 5px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2), 0 6px 20px rgba(0, 0, 0, 0.2);
+    justify-content: center;
+    align-items: center;
+}
+
+.subChanged {
+    font-weight: bold;
+    font-size: 20px;
+    color: orange;
+}

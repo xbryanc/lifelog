@@ -28,7 +28,17 @@ router.get('/echo', function(req, res) {
 router.post('/save_info',
     connect.ensureLoggedIn(),
     function(req, res) {
-        User.updateOne({_id: req.user._id}, {diary: req.body.diary, finance: req.body.finance, tags: req.body.tags}, function(err, user) {
+        User.updateOne({_id: req.user._id}, {diary: req.body.diary, finance: req.body.finance, tags: req.body.tags, subscriptions: req.body.subscriptions}, function(err, user) {
+            if (err) console.log(error);
+            res.send({});
+        });
+    }
+);
+
+router.post('/save_profile',
+    connect.ensureLoggedIn(),
+    function(req, res) {
+        User.updateOne({_id: req.user._id}, {subscriptions: req.body.subscriptions}, function(err, user) {
             if (err) console.log(error);
             res.send({});
         });

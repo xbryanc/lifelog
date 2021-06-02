@@ -46,3 +46,7 @@
     transform: none;
     box-shadow: none;
 }
+
+.buttonPicture {
+    width: 30px;
+}

@@ -16,6 +16,7 @@ const UserModelSchema = new mongoose.Schema({
   tags: [String],
   subscriptions: [{
     start: String,
+    end: String,
     frequency: String,
     cost: Number,
     description: String,

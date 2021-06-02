@@ -8,6 +8,17 @@ const CONSTANTS = {
         tags: [],
         show: false,
     },
+    EMPTY_SUBSCRIPTION: {
+        cost: 0,
+        description: "",
+        location: "",
+        tags: [],
+        start: "",
+        end: "",
+        frequency: "",
+        show: false,
+    },
+    SUBSCRIPTION_FREQUENCIES: ['', 'daily', 'weekly', 'monthly', 'yearly'],
     STAR_MAX: 10,
     INF: 1e18, // large number
 };

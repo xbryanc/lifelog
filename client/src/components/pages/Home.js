@@ -50,10 +50,21 @@ export default class Home extends Component {
                 });
             });
         }
+        let subscriptionCopy = [];
+        this.props.userInfo.subscriptions.forEach(sub => {
+            let newSub = Object.assign({}, sub);
+            let newTags = [];
+            sub.tags.forEach(tag => {
+                newTags.push(tag);
+            });
+            newSub.tags = newTags;
+            subscriptionCopy.push(newSub);
+        });
         this.state = {
             currentDate: new Date(Date.now()).toLocaleDateString(),
             diary: diaryCopy,
             finance: financeCopy,
+            subscriptions: subscriptionCopy,
             tags: tagsCopy,
             tagEdits: {},
             newTag: "",
@@ -627,6 +638,7 @@ export default class Home extends Component {
             diary: this.state.diary,
             tags: this.state.tags,
             finance: this.state.finance,
+            subscriptions: this.state.subscriptions,
         };
         fetch("/api/save_info", {
             method: 'POST',

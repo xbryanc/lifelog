@@ -5,6 +5,7 @@ import NavBar from "./modules/NavBar";
 
 import Root from './pages/Root';
 import Home from './pages/Home';
+import Profile from './pages/Profile';
 import '../css/app.css';
 
 class App extends Component {
@@ -34,6 +35,7 @@ class App extends Component {
         <Switch>
           <Route exact path="/" render={(props) => <Root {...props} userInfo={this.state.userInfo} /> } />
           <Route exact path="/home" render={(props) => <Home {...props} userInfo={this.state.userInfo} /> } />
+          <Route exact path="/profile" render={(props) => <Profile {...props} userInfo={this.state.userInfo} /> } />
         </Switch>
       </div>
     );
