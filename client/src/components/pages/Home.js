@@ -238,6 +238,35 @@ export default class Home extends Component {
                                 </div>
                             </div>
                             <div className="finTransactionList">
+                                {this.state.subscriptions.map((sub, ind) => (
+                                    !this.displaySub(sub) ?
+                                    null
+                                    :
+                                    <div key={ind} className="finTransaction">
+                                        <div className="transactionHeader sub">
+                                            <div className="transactionLocation" onClick={() => this.handleSubClick(sub)}>
+                                                {sub.location}
+                                            </div>
+                                            <div className="transactionTagsList" onClick={() => this.handleSubClick(sub)}>
+                                                {sub.tags.map((tag, tagInd) => (
+                                                    <div key={`tag${tagInd}`} className="transactionTag">
+                                                        {tag}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            <div className={classNames("transactionCost", {"zero": !sub.cost || parseInt(sub.cost) === 0})} onClick={() => this.handleSubClick(sub)}>
+                                                {this.formatCost(sub.cost)}
+                                            </div>
+                                        </div>
+                                        {sub.show ?
+                                        <div className="transactionBody sub">
+                                            {sub.description}
+                                        </div>
+                                        :
+                                        null
+                                        }
+                                    </div>
+                                ))}
                                 {transactions.map((el, ind) => (
                                     <div key={ind} className="finTransaction">
                                         <div className="transactionHeader">
@@ -393,6 +422,34 @@ export default class Home extends Component {
         this.toggleShow(transaction);
     }
 
+    handleSubClick = (sub) => {
+        sub.show = !sub.show;
+        this.setState({
+            subscriptions: this.state.subscriptions,
+        });
+    }
+
+    displaySub = (sub) => {
+        let curDate = new Date(this.state.selectedDate);
+        if (sub.end !== "" && new Date(sub.end) < curDate) {
+            return false;
+        }
+        if (!sub.start || sub.start === "" || new Date(sub.start) > curDate) {
+            return false;
+        }
+        let startDate = new Date(sub.start);
+        if (sub.frequency === CONSTANTS.DAILY) {
+            return true;
+        } else if (sub.frequency === CONSTANTS.WEEKLY) {
+            return startDate.getDay() === curDate.getDay();
+        } else if (sub.frequency === CONSTANTS.MONTHLY) {
+            return startDate.getDate() === curDate.getDate();
+        } else if (sub.frequency === CONSTANTS.YEARLY) {
+            return startDate.getMonth() === curDate.getMonth() && startDate.getDate() === curDate.getDate();
+        }
+        return false;
+    }
+
     tagValid = (tag) => {
         return tag.length > 0 && this.state.tags.indexOf(tag) == -1;
     }
@@ -546,7 +603,7 @@ export default class Home extends Component {
                 src={ind < this.state.displayRating ? filled : unfilled}
                 onMouseEnter={() => this.changeDisplay(ind + 1)}
                 onMouseLeave={() => this.changeDisplay(this.state.rating)}
-                onClick={() => this.updateDiary(this.state.diaryText, ind + 1)}
+                onClick={() => this.updateDiary(this.state.diaryText, this.state.rating === ind + 1 ? 0 : ind + 1)}
             />
         ));
     }

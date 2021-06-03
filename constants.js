@@ -1,3 +1,9 @@
+const EMPTY = "";
+const DAILY = "daily";
+const WEEKLY = "weekly";
+const MONTHLY = "monthly";
+const YEARLY = "yearly";
+
 const CONSTANTS = {
     NAVBAR_HAMBURGER_WIDTH_THRESHOLD: 991,
     KONAMI_CODE: ['arrowup', 'arrowup', 'arrowdown', 'arrowdown', 'arrowleft', 'arrowright', 'arrowleft', 'arrowright', 'b', 'a'],
@@ -18,7 +24,12 @@ const CONSTANTS = {
         frequency: "",
         show: false,
     },
-    SUBSCRIPTION_FREQUENCIES: ['', 'daily', 'weekly', 'monthly', 'yearly'],
+    EMPTY: EMPTY,
+    DAILY: DAILY,
+    WEEKLY: WEEKLY,
+    MONTHLY: MONTHLY,
+    YEARLY: YEARLY,
+    SUBSCRIPTION_FREQUENCIES: [EMPTY, DAILY, WEEKLY, MONTHLY, YEARLY],
     STAR_MAX: 10,
     INF: 1e18, // large number
 };

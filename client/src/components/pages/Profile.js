@@ -12,7 +12,7 @@ Subscription structure: list of:
     {
         start: String,
         end: String,
-        frequency: String, (daily, monthly, yearly)
+        frequency: String,
         cost: Number,
         description: String,
         location: String,
