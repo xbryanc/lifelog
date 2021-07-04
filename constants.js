@@ -32,6 +32,47 @@ const CONSTANTS = {
     SUBSCRIPTION_FREQUENCIES: [EMPTY, DAILY, WEEKLY, MONTHLY, YEARLY],
     STAR_MAX: 10,
     INF: 1e18, // large number
+    SUB_APPLIES: (sub, selectedDate) => {
+        let curDate = new Date(selectedDate);
+        if (sub.end !== "" && new Date(sub.end) < curDate) {
+            return false;
+        }
+        if (!sub.start || sub.start === "" || new Date(sub.start) > curDate) {
+            return false;
+        }
+        let startDate = new Date(sub.start);
+        if (sub.frequency === CONSTANTS.DAILY) {
+            return true;
+        } else if (sub.frequency === CONSTANTS.WEEKLY) {
+            return startDate.getDay() === curDate.getDay();
+        } else if (sub.frequency === CONSTANTS.MONTHLY) {
+            return startDate.getDate() === curDate.getDate();
+        } else if (sub.frequency === CONSTANTS.YEARLY) {
+            return startDate.getMonth() === curDate.getMonth() && startDate.getDate() === curDate.getDate();
+        }
+        return false;
+    },
+    FORMAT_COST: (costInPennies) => {
+        let dollar = Math.floor(costInPennies / 100);
+        let cents = costInPennies % 100;
+        let rest = `${Math.floor(cents / 10)}${cents % 10}`;
+        return `$${dollar}.${rest}`;
+    },
+    COLOR_FOR_KEY: (key) => {
+        function djb2(str) {
+            let hash = 5381;
+            for (let i = 0; i < str.length; i++) {
+                hash = ((hash << 5) + hash) + str.charCodeAt(i); /* hash * 33 + c */
+            }
+            return hash;
+        }
+
+        let hash = djb2(key);
+        let r = (hash & 0xFF0000) >> 16;
+        let g = (hash & 0x00FF00) >> 8;
+        let b = hash & 0x0000FF;
+        return "#" + ("0" + r.toString(16)).substr(-2) + ("0" + g.toString(16)).substr(-2) + ("0" + b.toString(16)).substr(-2);
+    },
 };
 
 module.exports = CONSTANTS;

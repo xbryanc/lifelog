@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import Calendar from 'react-calendar';
 import classNames from 'classnames';
+import { PieChart } from 'react-minimal-pie-chart';
 import '../../css/app.css';
 import '../../css/profile.css';
 
@@ -41,9 +42,15 @@ export default class Profile extends Component {
             newSub.tags = newTags;
             subscriptionCopy.push(newSub);
         });
+        let today = new Date(Date.now()).toLocaleDateString();
         this.state = {
             subscriptions: subscriptionCopy,
+            finance: this.props.userInfo.finance,  // DO NOT MODIFY, DIRECT REFERENCE
             setShow: false,
+            chartStart: today,
+            chartEnd: today,
+            selectingChart: false,
+            hoverKey: "",
         };
     }
 
@@ -52,11 +59,36 @@ export default class Profile extends Component {
     }
     
     render() {
+        let {total, itemized} = this.getSpendingByCategory();
+        let data = [];
+        Object.keys(itemized).forEach(key => {
+            data.push({
+                title: key,
+                value: itemized[key],
+                color: CONSTANTS.COLOR_FOR_KEY(key),
+            });
+        });
         return (
             <div className="profileContainer">
+                {!this.state.selectingChart ? (null) :
+                    <div className="selectContainer" onClick={this.commitChartDate}>
+                        <div className="selectPopup" onClick={e => e.stopPropagation()}>
+                            Selecting {this.state.chartDateField} date as {this.state.setChartDate}
+                            <Calendar
+                                className="subCalendar"
+                                onClickDay={e => this.changeChartDate(e.toLocaleDateString())}
+                                calendarType="US"
+                                defaultValue={new Date(this.state.setChartDate)}
+                            />
+                            <div className="button saveButton" onClick={this.commitChartDate}>
+                                Select Date
+                            </div>
+                        </div>
+                    </div>
+                }
                 {!this.state.setShow ? (null) :
-                    <div className="subPopupContainer" onClick={this.commitDate}>
-                        <div className="subPopup" onClick={e => e.stopPropagation()}>
+                    <div className="selectContainer" onClick={this.commitDate}>
+                        <div className="selectPopup" onClick={e => e.stopPropagation()}>
                             Selecting {this.state.setField} date as {this.state.setDate}
                             <Calendar
                                 className="subCalendar"
@@ -123,7 +155,7 @@ export default class Profile extends Component {
                                         {el.editing ?
                                         <input type="number" className="subEditEntry" name="subCostEntry" id="subCostEntry" value={el.editCost} onChange={e => this.editSub(el, "editCost", e.target.value)} onClick={e => e.stopPropagation()} />
                                         :
-                                        this.formatCost(el.cost)}
+                                        CONSTANTS.FORMAT_COST(el.cost)}
                                     </div>
                                     <div className="subIcons">
                                         <img
@@ -151,8 +183,82 @@ export default class Profile extends Component {
                         Save
                     </div>
                 </div>
+                <div className="chartContainer">
+                    <div className="chartHeader">
+                        <div className="chartDate" onClick={() => this.selectChartDate("start")}>
+                            {this.state.chartStart}
+                        </div>
+                        TO
+                        <div className="chartDate" onClick={() => this.selectChartDate("end")}>
+                            {this.state.chartEnd}
+                        </div>
+                    </div>
+                    <div className="chartBody">
+                        <div className="chartPie">
+                            <PieChart
+                                data={data}
+                                onMouseOver={(_, index) => this.setHoverKey(data[index].title)}
+                                onMouseOut={() => this.setHoverKey("")}
+                            />
+                        </div>
+                        <div className="chartTotals">
+                            <div className="chartTotalMain">
+                                TOTAL: {CONSTANTS.FORMAT_COST(total)}
+                            </div>
+                            <div className="chartDetails">
+                                {data.map((el, ind) => (
+                                    <div key={ind} className={classNames({"chartHoverKey": el.title === this.state.hoverKey})}>
+                                        {el.title} : {CONSTANTS.FORMAT_COST(el.value)}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         );
+    }
+
+    setHoverKey = (key) => {
+        this.setState({
+            hoverKey: key,
+        });
+    }
+
+    getSpendingByCategory = () => {
+        let startDate = new Date(this.state.chartStart);
+        let endDate = new Date(this.state.chartEnd);
+        let total = 0;
+        let itemized = {};
+        if (endDate < startDate) {
+            return {total, itemized};
+        }
+        const addSpending = (cost, tag) => {
+            if (!cost || parseInt(cost) === 0) {
+                return;
+            }
+            cost = parseInt(cost);
+            total += cost;
+            if (tag !== "") {
+                if (!itemized.hasOwnProperty(tag)) {
+                    itemized[tag] = 0;
+                }
+                itemized[tag] += cost;
+            }
+        };
+        for (let date = startDate; date <= endDate; date.setDate(date.getDate() + 1)) {
+            this.state.subscriptions.forEach(sub => {
+                if (CONSTANTS.SUB_APPLIES(sub, date)) {
+                    addSpending(sub.cost, sub.tags.length === 0 ? "MISC" : sub.tags[0]);
+                }
+            });
+            let dateStr = date.toLocaleDateString();
+            let transactions = this.state.finance.hasOwnProperty(dateStr) ? this.state.finance[dateStr] : [];
+            transactions.forEach(transaction => {
+                addSpending(transaction.cost, transaction.tags.length === 0 ? "MISC" : transaction.tags[0]);
+            });
+        }
+        return {total, itemized};
     }
 
     subChanged = () => {
@@ -231,9 +337,24 @@ export default class Profile extends Component {
         });
     }
 
+    selectChartDate = (fieldName) => {
+        let relevantDate = fieldName === "start" ? this.state.chartStart : this.state.chartEnd;
+        this.setState({
+            chartDateField: fieldName,
+            setChartDate: relevantDate,
+            selectingChart: true,
+        });
+    }
+
     changeDate = (date) => {
         this.setState({
             setDate: date,
+        });
+    }
+
+    changeChartDate = (date) => {
+        this.setState({
+            setChartDate: date,
         });
     }
 
@@ -242,6 +363,13 @@ export default class Profile extends Component {
         this.setState({
             setShow: false,
             subscriptions: this.state.subscriptions,
+        });
+    }
+
+    commitChartDate = () => {
+        this.setState({
+            selectingChart: false,
+            [this.state.chartDateField === "start" ? "chartStart" : "chartEnd"]: this.state.setChartDate,
         });
     }
 
@@ -264,13 +392,6 @@ export default class Profile extends Component {
             return "(SET)";
         }
         return `(${freq})`;
-    }
-
-    formatCost = (costInPennies) => {
-        let dollar = Math.floor(costInPennies / 100);
-        let cents = costInPennies % 100;
-        let rest = `${Math.floor(cents / 10)}${cents % 10}`;
-        return `$${dollar}.${rest}`;
     }
 
     startSubEdit = (sub) => {

@@ -130,7 +130,7 @@
     margin: 0px 5px;
 }
 
-.subPopupContainer {
+.selectContainer {
     position: fixed;
     width: 100%;
     height: 100%;
@@ -142,7 +142,7 @@
     z-index: 150;
 }
 
-.subPopup {
+.selectPopup {
     display: flex;
     flex-direction: column;
     position: absolute;
@@ -163,4 +163,55 @@
     font-weight: bold;
     font-size: 20px;
     color: orange;
+}
+
+.chartDate {
+    text-decoration: underline;
+    margin: 0 5px;
+}
+
+.chartContainer {
+    border: 1px solid black;
+    border-radius: 5px;
+    padding: 5px;
+    width: 80%;
+    margin-top: 10px;
+}
+
+.chartHeader {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    border-bottom: 1px solid black;
+    padding: 10px;
+}
+
+.chartBody {
+    display: flex;
+    flex-direction: row;
+}
+
+.chartPie {
+    width: 50%;
+    padding: 5px;
+}
+
+.chartTotals {
+    width: 50%;
+    padding: 5px;
+    display: flex;
+    flex-direction: column;
+}
+
+.chartTotalMain {
+    height: 30%;
+    font-size: 30px;
+}
+
+.chartDetails {
+    height: 70%;
+}
+
+.chartHoverKey {
+    color: green;
 }

@@ -239,7 +239,7 @@ export default class Home extends Component {
                             </div>
                             <div className="finTransactionList">
                                 {this.state.subscriptions.map((sub, ind) => (
-                                    !this.displaySub(sub) ?
+                                    !CONSTANTS.SUB_APPLIES(sub, this.state.selectedDate) ?
                                     null
                                     :
                                     <div key={ind} className="finTransaction">
@@ -255,7 +255,7 @@ export default class Home extends Component {
                                                 ))}
                                             </div>
                                             <div className={classNames("transactionCost", {"zero": !sub.cost || parseInt(sub.cost) === 0})} onClick={() => this.handleSubClick(sub)}>
-                                                {this.formatCost(sub.cost)}
+                                                {CONSTANTS.FORMAT_COST(sub.cost)}
                                             </div>
                                         </div>
                                         {sub.show ?
@@ -288,7 +288,7 @@ export default class Home extends Component {
                                                 {el.editing ?
                                                 <input type="number" className="transactionEditEntry" name="transactionCostEntry" id="transactionCostEntry" value={el.editCost} onChange={e => this.editTransaction(el, "editCost", e.target.value)} onClick={e => e.stopPropagation()} />
                                                 :
-                                                this.formatCost(el.cost)
+                                                CONSTANTS.FORMAT_COST(el.cost)
                                                 }
                                             </div>
                                             <div className="transactionIcons">
@@ -394,13 +394,6 @@ export default class Home extends Component {
         });
     }
 
-    formatCost = (costInPennies) => {
-        let dollar = Math.floor(costInPennies / 100);
-        let cents = costInPennies % 100;
-        let rest = `${Math.floor(cents / 10)}${cents % 10}`;
-        return `$${dollar}.${rest}`;
-    }
-
     setDetails = (showing) => {
         this.setState({
             hoverDetails: showing,
@@ -427,27 +420,6 @@ export default class Home extends Component {
         this.setState({
             subscriptions: this.state.subscriptions,
         });
-    }
-
-    displaySub = (sub) => {
-        let curDate = new Date(this.state.selectedDate);
-        if (sub.end !== "" && new Date(sub.end) < curDate) {
-            return false;
-        }
-        if (!sub.start || sub.start === "" || new Date(sub.start) > curDate) {
-            return false;
-        }
-        let startDate = new Date(sub.start);
-        if (sub.frequency === CONSTANTS.DAILY) {
-            return true;
-        } else if (sub.frequency === CONSTANTS.WEEKLY) {
-            return startDate.getDay() === curDate.getDay();
-        } else if (sub.frequency === CONSTANTS.MONTHLY) {
-            return startDate.getDate() === curDate.getDate();
-        } else if (sub.frequency === CONSTANTS.YEARLY) {
-            return startDate.getMonth() === curDate.getMonth() && startDate.getDate() === curDate.getDate();
-        }
-        return false;
     }
 
     tagValid = (tag) => {
