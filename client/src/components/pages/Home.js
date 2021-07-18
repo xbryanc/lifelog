@@ -96,9 +96,7 @@ export default class Home extends Component {
         let changes = 0;
         let changeSet = [];
         totalSet.forEach(key => {
-            let curEntry = this.state.diary[key];
-            let prevEntry = this.props.userInfo.diary[key];
-            if (curEntry != prevEntry || this.financeChanged(key)) {
+            if (this.diaryChanged(key) || this.financeChanged(key)) {
                 changes++;
                 changeSet.push(key);
             }
@@ -178,7 +176,7 @@ export default class Home extends Component {
                             </div>
                         </div>
                         <textarea className="diaryEntry" name="diaryEntry" id="diaryEntry" value={this.state.diaryText} onChange={e => this.updateDiary(e.target.value, this.state.rating)} />
-                        <div className="button saveButton" onClick={this.saveInfo}>
+                        <div className={classNames("button saveButton", {"disabled": this.isEditingAnything()})} onClick={this.saveInfo}>
                             Save
                         </div>
                     </div>
@@ -319,6 +317,14 @@ export default class Home extends Component {
                 </div>
             </div>
         );
+    }
+
+    diaryChanged = (dateOfInterest) => {
+        let currentDiary = this.state.diary[dateOfInterest] || {};
+        let prevDiary = this.props.userInfo.diary[dateOfInterest] || {};
+        let curRating = currentDiary.rating || 0;
+        let prevRating = prevDiary.rating || 0;
+        return curRating !== prevRating || currentDiary.description !== prevDiary.description;
     }
 
     financeChanged = (dateOfInterest) => {
@@ -651,10 +657,27 @@ export default class Home extends Component {
         this.toggleKonami();
     }
 
+    isEditingAnything = () => {
+        let result = false;
+        Object.values(this.state.finance).forEach(transactionList => {
+            if (result) {
+                return;
+            }
+            transactionList.forEach(t => {
+                if (t.editing) {
+                    result = true;
+                    return;
+                }
+            })
+        });
+        return result;
+    }
+
     saveInfo = () => {
-        let finance = this.state.finance;
-        Object.keys(finance).forEach(date => {
-            let transactionList = finance[date];
+        if (this.isEditingAnything()) {
+            return;
+        }
+        Object.values(this.state.finance).forEach(transactionList => {
             transactionList.forEach(t => {
                 delete t.show;
                 delete t.editing;

@@ -3,6 +3,10 @@ const DAILY = "daily";
 const WEEKLY = "weekly";
 const MONTHLY = "monthly";
 const YEARLY = "yearly";
+const DAY = "day";
+const WEEK = "week";
+const MONTH = "month";
+const YEAR = "year";
 
 const CONSTANTS = {
     NAVBAR_HAMBURGER_WIDTH_THRESHOLD: 991,
@@ -12,7 +16,11 @@ const CONSTANTS = {
         description: "",
         location: "",
         tags: [],
-        show: false,
+        show: true,
+        editing: true,
+        editCost: 0,
+        editDescription: "",
+        editLocation: "",
     },
     EMPTY_SUBSCRIPTION: {
         cost: 0,
@@ -22,14 +30,23 @@ const CONSTANTS = {
         start: "",
         end: "",
         frequency: "",
-        show: false,
+        show: true,
+        editing: true,
+        editCost: 0,
+        editDescription: "",
+        editLocation: "",
     },
     EMPTY: EMPTY,
     DAILY: DAILY,
     WEEKLY: WEEKLY,
     MONTHLY: MONTHLY,
     YEARLY: YEARLY,
+    DAY: DAY,
+    WEEK: WEEK,
+    MONTH: MONTH,
+    YEAR: YEAR,
     SUBSCRIPTION_FREQUENCIES: [EMPTY, DAILY, WEEKLY, MONTHLY, YEARLY],
+    PRESET_SPANS: [DAY, WEEK, MONTH, YEAR],
     STAR_MAX: 10,
     INF: 1e18, // large number
     SUB_APPLIES: (sub, selectedDate) => {
@@ -41,16 +58,31 @@ const CONSTANTS = {
             return false;
         }
         let startDate = new Date(sub.start);
-        if (sub.frequency === CONSTANTS.DAILY) {
+        if (sub.frequency === DAILY) {
             return true;
-        } else if (sub.frequency === CONSTANTS.WEEKLY) {
+        } else if (sub.frequency === WEEKLY) {
             return startDate.getDay() === curDate.getDay();
-        } else if (sub.frequency === CONSTANTS.MONTHLY) {
+        } else if (sub.frequency === MONTHLY) {
             return startDate.getDate() === curDate.getDate();
-        } else if (sub.frequency === CONSTANTS.YEARLY) {
+        } else if (sub.frequency === YEARLY) {
             return startDate.getMonth() === curDate.getMonth() && startDate.getDate() === curDate.getDate();
         }
         return false;
+    },
+    SUBTRACT_PRESET: (date, span) => {
+        let curDate = new Date(date);
+        let newDate = curDate;
+        if (span !== DAY) {
+            if (span === WEEK) {
+                newDate.setDate(curDate.getDate() - 7);
+            } else if (span === MONTH) {
+                newDate.setMonth(curDate.getMonth() - 1);
+            } else if (span === YEAR) {
+                newDate.setFullYear(curDate.getFullYear() - 1);
+            }
+            newDate.setDate(newDate.getDate() + 1);
+        }
+        return newDate.toLocaleDateString();
     },
     FORMAT_COST: (costInPennies) => {
         let dollar = Math.floor(costInPennies / 100);

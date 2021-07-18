@@ -179,7 +179,7 @@ export default class Profile extends Component {
                             </div>
                         ))}
                     </div>
-                    <div className="button saveButton" onClick={this.saveProfile}>
+                    <div className={classNames("button saveButton", {"disabled": this.isEditingAnything()})} onClick={this.saveProfile}>
                         Save
                     </div>
                 </div>
@@ -191,6 +191,13 @@ export default class Profile extends Component {
                         TO
                         <div className="chartDate" onClick={() => this.selectChartDate("end")}>
                             {this.state.chartEnd}
+                        </div>
+                        <div className="chartPresetList">
+                            {CONSTANTS.PRESET_SPANS.map(span => (
+                                <div className="chartPreset" onClick={() => this.setPresetSpan(span)}>
+                                    {span}
+                                </div>
+                            ))}
                         </div>
                     </div>
                     <div className="chartBody">
@@ -217,6 +224,26 @@ export default class Profile extends Component {
                 </div>
             </div>
         );
+    }
+
+    isEditingAnything = () => {
+        let result = false;
+        this.state.subscriptions.forEach(sub => {
+            if (sub.editing) {
+                result = true;
+                return;
+            }
+        })
+        return result;
+    }
+
+    setPresetSpan = (span) => {
+        let today = new Date(Date.now()).toLocaleDateString();
+        let prev = CONSTANTS.SUBTRACT_PRESET(today, span);
+        this.setState({
+            chartStart: prev,
+            chartEnd: today,
+        });
     }
 
     setHoverKey = (key) => {
@@ -415,6 +442,9 @@ export default class Profile extends Component {
     }
 
     saveProfile = () => {
+        if (this.isEditingAnything()) {
+            return;
+        }
         let subscriptions = this.state.subscriptions;
         subscriptions.forEach(s => {
             delete s.show;
