@@ -88,7 +88,8 @@ const CONSTANTS = {
         let dollar = Math.floor(costInPennies / 100);
         let cents = costInPennies % 100;
         let rest = `${Math.floor(cents / 10)}${cents % 10}`;
-        return `$${dollar}.${rest}`;
+        // https://stackoverflow.com/questions/2901102/how-to-print-a-number-with-commas-as-thousands-separators-in-javascript
+        return `$${dollar.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")}.${rest}`;
     },
     COLOR_FOR_KEY: (key) => {
         function djb2(str) {
