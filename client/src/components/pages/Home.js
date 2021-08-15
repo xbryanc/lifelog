@@ -61,7 +61,7 @@ export default class Home extends Component {
             subscriptionCopy.push(newSub);
         });
         this.state = {
-            currentDate: new Date(Date.now()).toLocaleDateString(),
+            selectedDate: new Date(Date.now()).toLocaleDateString(),
             diary: diaryCopy,
             finance: financeCopy,
             subscriptions: subscriptionCopy,
@@ -73,12 +73,14 @@ export default class Home extends Component {
             konami: false,
             bulkPaste: "",
             hoverDetails: false,
+            searchString: "",
+            searchResults: new Set(),
         }
     }
     
     componentDidMount() {
         document.title = "Home";
-        this.calendarChange(this.state.currentDate);
+        this.calendarChange(this.state.selectedDate);
         window.addEventListener("keydown", this.handleKeyDown);
     }
 
@@ -87,6 +89,11 @@ export default class Home extends Component {
     }
     
     render() {
+        const sortByDate = (a, b) => {
+            let dateA = new Date(a);
+            let dateB = new Date(b);
+            return dateA < dateB ? -1 : 1;
+        };
         let totalSet = new Set([
             ...Object.keys(this.state.diary),
             ...Object.keys(this.props.userInfo.diary),
@@ -101,11 +108,7 @@ export default class Home extends Component {
                 changeSet.push(key);
             }
         });
-        changeSet.sort((a, b) => {
-            let dateA = new Date(a);
-            let dateB = new Date(b);
-            return dateA < dateB;
-        });
+        changeSet.sort(sortByDate);
         let transactions = this.state.finance.hasOwnProperty(this.state.selectedDate) ? this.state.finance[this.state.selectedDate] : [];
         let incompleteDates = new Set();
         Object.keys(this.state.finance).forEach(dateKey => {
@@ -120,7 +123,7 @@ export default class Home extends Component {
             if (incomplete) {
                 incompleteDates.add(dateKey);
             }
-        })
+        });
         return (
             <div className="homeContainer">
                 {!this.state.konami ? (null) :
@@ -149,9 +152,23 @@ export default class Home extends Component {
                         let dateKey = properties.date.toLocaleDateString();
                         return incompleteDates.has(dateKey) ? <div className={classNames("calendarIncomplete", {"details" : this.state.hoverDetails})}>!</div> : null;
                     }}
+                    value={new Date(this.state.selectedDate)}
                 />
                 <div className="entryContainer">
                     <div className="diaryContainer">
+                        <div className="searchContainer">
+                            <div className="searchHeader">
+                                <input type="text" name="searchString" id="searchString" placeholder="Search... (press Enter)" onChange={e => this.updateSearch(e.target.value)} onKeyPress={this.maybeSearch} />
+                                <div className="dateLink" onClick={() => this.calendarChange(new Date(Date.now()).toLocaleDateString())}>Today</div>
+                            </div>
+                            <div className="searchResultList">
+                                {Array.from(this.state.searchResults).sort(sortByDate).map(dateString => (
+                                    <div className="dateLink homeDate" onClick={() => this.calendarChange(dateString)}>
+                                        {dateString}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
                         <div className="diaryHeader">
                             <div className="starsContainer">
                                 {this.state.selectedDate}: {this.createStars()}
@@ -317,6 +334,40 @@ export default class Home extends Component {
                 </div>
             </div>
         );
+    }
+
+    updateSearch = (searchString) => {
+        this.setState({
+            searchString,
+        });
+    }
+
+    maybeSearch = (e) => {
+        const contains = (stringA, stringB) => {
+            return (stringA || "").indexOf(stringB) !== -1;
+        };
+        if (e.key === 'Enter') {
+            let results = new Set();
+            if (this.state.searchString) {
+                Object.keys(this.state.finance).forEach(date => {
+                    this.state.finance[date].forEach(transaction => {
+                        if (contains(transaction.location, this.state.searchString) ||
+                            contains(transaction.description, this.state.searchString)) {
+                                results.add(date);
+                                return;
+                        }
+                    });
+                });
+                Object.keys(this.state.diary).forEach(date => {
+                    if (contains(this.state.diary[date].description, this.state.searchString)) {
+                        results.add(date);
+                    }
+                });
+            }
+            this.setState({
+                searchResults: results,
+            });
+        }
     }
 
     diaryChanged = (dateOfInterest) => {

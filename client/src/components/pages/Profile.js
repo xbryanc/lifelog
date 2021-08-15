@@ -51,6 +51,7 @@ export default class Profile extends Component {
             chartEnd: today,
             selectingChart: false,
             hoverKey: "",
+            defaultHoverKey: "",
         };
     }
 
@@ -59,8 +60,10 @@ export default class Profile extends Component {
     }
     
     render() {
-        let {total, itemized} = this.getSpendingByCategory();
+        const curKey = this.state.hoverKey || this.state.defaultHoverKey;
+        let {total, itemized, transactionList} = this.getSpendingByCategory();
         let data = [];
+        let curTransactions = transactionList[curKey] || [];
         Object.keys(itemized).forEach(key => {
             data.push({
                 title: key,
@@ -204,6 +207,7 @@ export default class Profile extends Component {
                         <div className="chartPie">
                             <PieChart
                                 data={data}
+                                onClick={(_, index) => this.setDefaultHoverKey(data[index].title)}
                                 onMouseOver={(_, index) => this.setHoverKey(data[index].title)}
                                 onMouseOut={() => this.setHoverKey("")}
                             />
@@ -213,11 +217,20 @@ export default class Profile extends Component {
                                 TOTAL: {CONSTANTS.FORMAT_COST(total)}
                             </div>
                             <div className="chartDetails">
-                                {data.map((el, ind) => (
-                                    <div key={ind} className={classNames({"chartHoverKey": el.title === this.state.hoverKey})}>
-                                        {el.title} : {CONSTANTS.FORMAT_COST(el.value)}
-                                    </div>
-                                ))}
+                                <div className="chartCategories">
+                                    {data.map((el, ind) => (
+                                        <div key={ind} className={classNames({"chartHoverKey": el.title === curKey})}>
+                                            {el.title} : {CONSTANTS.FORMAT_COST(el.value)}
+                                        </div>
+                                    ))}
+                                </div>
+                                <div className="chartTransactions">
+                                    {curTransactions.map((transaction, ind) => (
+                                        <div key={ind}>
+                                            {transaction.date} - {transaction.location}: {CONSTANTS.FORMAT_COST(transaction.cost)}
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -252,15 +265,22 @@ export default class Profile extends Component {
         });
     }
 
+    setDefaultHoverKey = (key) => {
+        this.setState({
+            defaultHoverKey: this.state.defaultHoverKey === key ? "" : key,
+        });
+    }
+
     getSpendingByCategory = () => {
         let startDate = new Date(this.state.chartStart);
         let endDate = new Date(this.state.chartEnd);
         let total = 0;
         let itemized = {};
+        let transactionList = {};
         if (endDate < startDate) {
-            return {total, itemized};
+            return {total, itemized, transactionList};
         }
-        const addSpending = (cost, tag) => {
+        const addSpending = (tag, cost, location, date) => {
             if (!cost || parseInt(cost) === 0) {
                 return;
             }
@@ -269,23 +289,29 @@ export default class Profile extends Component {
             if (tag !== "") {
                 if (!itemized.hasOwnProperty(tag)) {
                     itemized[tag] = 0;
+                    transactionList[tag] = [];
                 }
                 itemized[tag] += cost;
+                transactionList[tag].push({
+                    cost,
+                    location,
+                    date,
+                });
             }
         };
         for (let date = startDate; date <= endDate; date.setDate(date.getDate() + 1)) {
             this.state.subscriptions.forEach(sub => {
                 if (CONSTANTS.SUB_APPLIES(sub, date)) {
-                    addSpending(sub.cost, sub.tags.length === 0 ? "MISC" : sub.tags[0]);
+                    addSpending(sub.tags.length === 0 ? "MISC" : sub.tags[0], sub.cost, sub.location, date.toLocaleDateString());
                 }
             });
             let dateStr = date.toLocaleDateString();
             let transactions = this.state.finance.hasOwnProperty(dateStr) ? this.state.finance[dateStr] : [];
             transactions.forEach(transaction => {
-                addSpending(transaction.cost, transaction.tags.length === 0 ? "MISC" : transaction.tags[0]);
+                addSpending(transaction.tags.length === 0 ? "MISC" : transaction.tags[0], transaction.cost, transaction.location, date.toLocaleDateString());
             });
         }
-        return {total, itemized};
+        return {total, itemized, transactionList};
     }
 
     subChanged = () => {

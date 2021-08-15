@@ -345,3 +345,28 @@
     justify-content: center;
     align-items: center;
 }
+
+#searchString {
+    flex-grow: 1;
+}
+
+.homeDate {
+    flex-grow: 0;
+}
+
+.searchResultList {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+}
+
+.dateLink {
+    border: 1px solid black;
+    margin: 2px 5px;
+    border-radius: 5px;
+}
+
+.searchHeader {
+    display: flex;
+    flex-direction: row;
+}

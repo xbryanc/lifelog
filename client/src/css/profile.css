@@ -193,7 +193,9 @@
 }
 
 .chartPie {
-    width: 50%;
+    width: 40vw;
+    /* height is intentionally in vw to keep it square */
+    height: 40vw;
     padding: 5px;
 }
 
@@ -205,12 +207,14 @@
 }
 
 .chartTotalMain {
-    height: 30%;
+    margin-bottom: 30px;
     font-size: 30px;
 }
 
 .chartDetails {
     height: 70%;
+    display: flex;
+    flex-direction: row;
 }
 
 .chartHoverKey {
@@ -227,4 +231,8 @@
     margin: 0px 2px;
     border: 1px solid black;
     border-radius: 5px;
+}
+
+.chartTransactions {
+    padding-left: 10px;
 }
