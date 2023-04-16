@@ -344,7 +344,9 @@ export default class Home extends Component {
 
     maybeSearch = (e) => {
         const contains = (stringA, stringB) => {
-            return (stringA || "").toLowerCase().indexOf(stringB) !== -1;
+            const strippedA = (stringA || "").replaceAll(" ", "").replaceAll("\t", "").replaceAll("\n", "").toLowerCase();
+            const strippedB = stringB.replaceAll(" ", "").replaceAll("\t", "").replaceAll("\n", "").toLowerCase();
+            return strippedA.indexOf(strippedB) !== -1;
         };
         if (e.key === 'Enter') {
             let results = new Set();

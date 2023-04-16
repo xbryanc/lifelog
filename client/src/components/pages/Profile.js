@@ -29,6 +29,22 @@ Subscription structure: list of:
 ]
 */
 
+/*
+Goals structure: record from "year-quarter" to:
+[
+    {
+        name: String,
+        description: String,
+        status: String, // (failed, passed, in progress)
+        ---
+        show: Boolean (always set to False),
+        editing: Boolean,
+        editName: string,
+        editDescription: string,
+    }
+]
+*/
+
 export default class Profile extends Component {
     constructor(props) {
         super(props);
@@ -42,6 +58,17 @@ export default class Profile extends Component {
             newSub.tags = newTags;
             subscriptionCopy.push(newSub);
         });
+        let goalsCopy = {};
+        let originalGoals = this.props.userInfo.goals;
+        if (originalGoals) {
+            Object.keys(originalGoals).forEach(key => {
+                goalsCopy[key] = [];
+                originalGoals[key].forEach(el => {
+                    let newEl = Object.assign({}, el);
+                    goalsCopy[key].push(newEl);
+                });
+            });
+        }
         let today = new Date(Date.now()).toLocaleDateString();
         this.state = {
             subscriptions: subscriptionCopy,
@@ -52,6 +79,8 @@ export default class Profile extends Component {
             selectingChart: false,
             hoverKey: "",
             defaultHoverKey: "",
+            goalsKey: CONSTANTS.TO_GOALS_KEY(today),
+            goals: goalsCopy,
         };
     }
 
@@ -64,6 +93,7 @@ export default class Profile extends Component {
         let {total, itemized, transactionList} = this.getSpendingByCategory();
         let data = [];
         let curTransactions = transactionList[curKey] || [];
+        let [goalsYear, goalsQuarter] = this.state.goalsKey.split('-');
         Object.keys(itemized).forEach(key => {
             data.push({
                 title: key,
@@ -186,6 +216,65 @@ export default class Profile extends Component {
                         Save
                     </div>
                 </div>
+                <div className="goalContainer">
+                    <div className="goalTitle">
+                        <div className="goalTitleMain">
+                            GOALS
+                            {this.goalsChanged() ?
+                            <div className="goalChanged">*</div>
+                            :
+                            null}
+                        </div>
+                        <div className="goalTitleSecondary">
+                            <div className="smallButton text" onClick={() => this.moveGoalsKey(-1)}>{"<"}</div>
+                            {`${goalsYear} Q${goalsQuarter}`}
+                            <div className="smallButton text" onClick={() => this.moveGoalsKey(1)}>{">"}</div>
+                        </div>
+                        <div className="goalTitleSecondary">
+                            <div className="smallButton text green" onClick={this.addGoal}>+</div>
+                        </div>
+                    </div>
+                    <div className="goalList">
+                        {(this.state.goals[this.state.goalsKey] || []).map((el, ind) => (
+                            <div key={ind} className={classNames("goalEntry", {"passed": el.status === "passed", "failed": el.status === "failed"})}>
+                                <div className="goalHeader">
+                                    <div className="goalName" onClick={() => this.handleGoalClick(el)}>
+                                        {el.editing ?
+                                        <input type="text" className="goalEditEntry" name="goalLocationEntry" id="goalLocationEntry" value={el.editName} onChange={e => this.editGoal(el, "editName", e.target.value)} onClick={e => e.stopPropagation()} />
+                                        :
+                                        el.name}
+                                    </div>
+                                    <div className="goalIcons">
+                                        <img
+                                            className="smallButton buttonPicture"
+                                            onClick={() => this.cycleGoalStatus(el)}
+                                            src={"/media/refresh.svg"}
+                                        />
+                                        <img
+                                            className="smallButton buttonPicture"
+                                            onClick={el.editing ? () => this.commitGoalEdit(el) : () => this.startGoalEdit(el)}
+                                            src={el.editing ? "/media/check.svg" : "/media/pencil.svg"}
+                                        />
+                                        <div className="smallButton text red" onClick={() => this.deleteGoal(ind)}>x</div>
+                                    </div>
+                                </div>
+                                {el.show ?
+                                <div className="goalBody">
+                                    {el.editing ?
+                                    <textarea type="text" className="goalEditDescription" name="goalDescriptionEntry" id="goalDescriptionEntry" value={el.editDescription} onChange={e => this.editGoal(el, "editDescription", e.target.value)} onClick={e => e.stopPropagation()} />
+                                    :
+                                    el.description}
+                                </div>
+                                :
+                                null
+                                }
+                            </div>
+                        ))}
+                    </div>
+                    <div className={classNames("button saveButton", {"disabled": this.isEditingAnything()})} onClick={this.saveProfile}>
+                        Save
+                    </div>
+                </div>
                 <div className="chartContainer">
                     <div className="chartHeader">
                         <div className="chartDate" onClick={() => this.selectChartDate("start")}>
@@ -246,6 +335,14 @@ export default class Profile extends Component {
                 result = true;
                 return;
             }
+        })
+        Object.values(this.state.goals).forEach(goalsList => {
+            goalsList.forEach(goal => {
+                if (goal.editing) {
+                    result = true;
+                    return;
+                }
+            });
         })
         return result;
     }
@@ -345,6 +442,82 @@ export default class Profile extends Component {
         return changed;
     }
 
+    goalsChanged = () => {
+        let currentGoals = this.state.goals;
+        let prevGoals = this.props.userInfo.goals;
+        let changed = false;
+        let prevKeys = Object.keys(prevGoals);
+        let currentKeys = Object.keys(currentGoals);
+        if (prevKeys.length !== currentKeys.length || !prevKeys.every(key => currentKeys.includes(key)) || !currentKeys.every(key => prevKeys.includes(key))) {
+            return true;
+        }
+        currentKeys.forEach(key => {
+            if (changed) {
+                return;
+            }
+            let prevEntries = prevGoals[key] || [];
+            let currentEntries = currentGoals[key] || [];
+            if (prevEntries.length !== currentEntries.length) {
+                changed = true;
+                return;
+            }
+            currentEntries.forEach((_, ind) => {
+                let cur = currentEntries[ind];
+                let prev = prevEntries[ind];
+                if (cur.name !== prev.name || cur.description !== prev.description || cur.status !== prev.status) {
+                    changed = true;
+                }
+            });
+        });
+        return changed;
+    }
+
+    addGoal = () => {
+        let newGoals = this.state.goals;
+        let newGoal = Object.assign({}, CONSTANTS.EMPTY_GOAL);
+        newGoals[this.state.goalsKey] = (newGoals[this.state.goalsKey] || []).concat(newGoal);
+        this.setState({
+            goals: newGoals,
+        });
+    }
+
+    deleteGoal = (ind) => {
+        let newGoals = this.state.goals;
+        newGoals[this.state.goalsKey].splice(ind, 1);
+        this.setState({
+            goals: newGoals,
+        });
+    }
+
+    cycleGoalStatus = (goal) => {
+        if (goal.status === "failed") {
+            goal.status = "in progress";
+        } else if (goal.status === "in progress") {
+            goal.status = "passed";
+        } else if (goal.status === "passed") {
+            goal.status = "failed";
+        }
+        this.setState({
+            goals: this.state.goals,
+        });
+    }
+
+    editGoal = (goal, fieldName, value) => {
+        goal[fieldName] = value;
+        this.setState({
+            goals: this.state.goals,
+        });
+    }
+
+    moveGoalsKey = (diff) => {
+        let [year, quarter] = this.state.goalsKey.split("-");
+        let rawValue = Number.parseInt(year) * 4 + Number.parseInt(quarter);
+        let newValue = rawValue + diff;
+        this.setState({
+            goalsKey: `${Math.floor(newValue / 4)}-${newValue % 4}`,
+        })
+    }
+
     addSub = () => {
         let newSubscriptions = this.state.subscriptions;
         let newSub = Object.assign({}, CONSTANTS.EMPTY_SUBSCRIPTION);
@@ -426,6 +599,13 @@ export default class Profile extends Component {
         });
     }
 
+    handleGoalClick = (goal) => {
+        goal.show = !goal.show;
+        this.setState({
+            goals: this.state.goals,
+        });
+    }
+
     handleSubClick = (sub) => {
         sub.show = !sub.show;
         this.setState({
@@ -445,6 +625,24 @@ export default class Profile extends Component {
             return "(SET)";
         }
         return `(${freq})`;
+    }
+
+    startGoalEdit = (goal) => {
+        goal.editing = true;
+        goal.editName = goal.name;
+        goal.editDescription = goal.description;
+        this.setState({
+            goals: this.state.goals,
+        });
+    }
+
+    commitGoalEdit = (goal) => {
+        goal.editing = false;
+        goal.name = goal.editName;
+        goal.description = goal.editDescription;
+        this.setState({
+            goals: this.state.goals,
+        });
     }
 
     startSubEdit = (sub) => {
@@ -479,8 +677,18 @@ export default class Profile extends Component {
             delete s.editLocation;
             delete s.editDescription;
         });
+        let goals = this.state.goals;
+        Object.values(goals).forEach(goalList => {
+            goalList.forEach(g => {
+                delete g.show;
+                delete g.editing;
+                delete g.editName;
+                delete g.editDescription;
+            });
+        });
         let body = {
-            subscriptions: this.state.subscriptions,
+            subscriptions,
+            goals,
         };
         fetch("/api/save_profile", {
             method: 'POST',

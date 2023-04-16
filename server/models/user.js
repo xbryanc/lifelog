@@ -22,7 +22,11 @@ const UserModelSchema = new mongoose.Schema({
     description: String,
     location: String,
     tags: [String]
-  }]
+  }],
+  goals: {
+    type: Object,
+    default: {},
+  }
 }, {minimize: false});
 
 // compile model from schema

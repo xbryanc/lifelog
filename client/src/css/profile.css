@@ -130,6 +130,83 @@
     margin: 0px 5px;
 }
 
+.goalContainer {
+    border: 1px solid black;
+    border-radius: 5px;
+    padding: 5px;
+    width: 80%;
+}
+
+.goalTitle {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+}
+
+.goalTitleMain {
+    display: flex;
+    flex-direction: row;
+    width: 10px;
+}
+
+.goalTitleSecondary {
+    display: flex;
+    flex-direction: row;
+    gap: 4px;
+    align-items: center;
+}
+
+.goalHeader {
+    display: flex;
+    flex-direction: row;
+    border-bottom: 1px solid black;
+    padding: 0px 3px;
+}
+
+.goalName {
+    cursor: pointer;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 0px 5px;
+}
+
+.goalEntry {
+    border: 1px solid black;
+    border-radius: 5px;
+    margin-top: 3px;
+}
+
+.goalEntry.passed {
+    background-color: lightgreen;
+}
+
+.goalEntry.failed {
+    background-color: lightcoral;
+}
+
+.goalBody {
+    padding: 5px 10px;
+    border-bottom: 1px solid black;
+}
+
+.goalIcons {
+    flex-grow: 0;
+    padding: 5px;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+}
+
+.goalEditEntry {
+    width: 100%;
+}
+
+.goalEditDescription {
+    width: 100%;
+}
+
 .selectContainer {
     position: fixed;
     width: 100%;
@@ -160,6 +237,12 @@
 }
 
 .subChanged {
+    font-weight: bold;
+    font-size: 20px;
+    color: orange;
+}
+
+.goalChanged {
     font-weight: bold;
     font-size: 20px;
     color: orange;

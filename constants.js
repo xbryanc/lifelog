@@ -36,6 +36,15 @@ const CONSTANTS = {
         editDescription: "",
         editLocation: "",
     },
+    EMPTY_GOAL: {
+        name: "",
+        description: "",
+        status: "in progress",
+        show: true,
+        editing: true,
+        editName: "",
+        editDescription: "",
+    },
     EMPTY: EMPTY,
     DAILY: DAILY,
     WEEKLY: WEEKLY,
@@ -49,6 +58,12 @@ const CONSTANTS = {
     PRESET_SPANS: [DAY, WEEK, MONTH, YEAR],
     STAR_MAX: 10,
     INF: 1e18, // large number
+    TO_GOALS_KEY: (selectedDate) => {
+        let curDate = new Date(selectedDate);
+        const year = curDate.getFullYear();
+        const month = curDate.getMonth();
+        return `${year}-${Math.floor(month / 3)}`;
+    },
     SUB_APPLIES: (sub, selectedDate) => {
         let curDate = new Date(selectedDate);
         if (sub.end !== "" && new Date(sub.end) < curDate) {

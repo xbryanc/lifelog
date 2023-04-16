@@ -38,7 +38,7 @@ router.post('/save_info',
 router.post('/save_profile',
     connect.ensureLoggedIn(),
     function(req, res) {
-        User.updateOne({_id: req.user._id}, {subscriptions: req.body.subscriptions}, function(err, user) {
+        User.updateOne({_id: req.user._id}, {subscriptions: req.body.subscriptions, goals: req.body.goals}, function(err, user) {
             if (err) console.log(error);
             res.send({});
         });
