@@ -29,10 +29,4 @@ export default class Root extends Component {
       </div>
     );
   }
-
-  updateField = (event) => {
-    this.setState({
-      [event.target.name]: event.target.value,
-    });
-  };
 }

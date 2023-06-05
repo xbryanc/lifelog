@@ -4,7 +4,6 @@ import { urlencoded, json } from "body-parser";
 import session from "express-session";
 import express, { Request, Response } from "express";
 import path from "path";
-import User from "./models/user";
 
 // env setup
 const dotenv = require("dotenv");
