@@ -1,68 +1,505 @@
-import React, { Component } from "react";
-import Calendar from "react-calendar";
-import classNames from "classnames";
+import React, { useState, useEffect } from "react";
+import _ from 'lodash';
+const Calendar = require("react-calendar");
+import clsx from "clsx";
 
-import { EMPTY_TRANSACTION, STAR_MAX, KONAMI_CODE } from "../../../../defaults";
+import { EMPTY_TRANSACTION, STAR_MAX, KONAMI_CODE, User } from "../../../../defaults";
 import { subApplies, formatCost } from "../../../../helpers";
 import "../../css/app.css";
 import "../../css/home.css";
 
-export default class Home extends Component {
-  constructor(props) {
-    super(props);
-    let diaryCopy = Object.assign({}, this.props.userInfo.diary);
-    let tagsCopy = this.props.userInfo.tags
-      ? this.props.userInfo.tags.slice()
-      : [];
-    let financeCopy = {};
-    let originalFinance = this.props.userInfo.finance;
-    if (originalFinance) {
-      Object.keys(originalFinance).forEach((key) => {
-        financeCopy[key] = [];
-        originalFinance[key].forEach((el) => {
-          let newEl = Object.assign({}, el);
-          newEl.tags = el.tags.slice();
-          financeCopy[key].push(newEl);
+interface HomeProps {
+  userInfo: User;
+}
+
+const Home: React.FC<HomeProps> = ({userInfo}) => {
+  const [selectedDate, setSelectedDate] = useState(new Date(Date.now()).toLocaleDateString());
+  const [diary, setDiary] = useState(_.cloneDeep(userInfo.diary));
+  const [finance, setFinance] = useState(_.cloneDeep(userInfo.finance));
+  const [subscriptions, setSubscriptions] = useState(_.cloneDeep(userInfo.subscriptions));
+  const [tags, setTags] = useState(_.cloneDeep(userInfo.tags));
+  const [tagEdits, setTagEdits] = useState({});
+  const [newTag, setNewTag] = useState("");
+  const [selectedTag, setSelectedTag] = useState("");
+  const [keys, setKeys] = useState([]);
+  const [konami, setKonami] = useState(false);
+  const [bulkPaste, setBulkPaste] = useState("");
+  const [hoverDetails, setHoverDetails] = useState(false);
+  const [searchString, setSearchString] = useState("");
+  const [searchResults, setSearchResults] = useState(new Set());
+
+  useEffect(() => {
+    document.title = "Home";
+    calendarChange(selectedDate);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    }
+  }, [])
+
+  const maybeSearch = (e) => {
+    const contains = (stringA, stringB) => {
+      const strippedA = (stringA || "")
+        .replaceAll(" ", "")
+        .replaceAll("\t", "")
+        .replaceAll("\n", "")
+        .toLowerCase();
+      const strippedB = stringB
+        .replaceAll(" ", "")
+        .replaceAll("\t", "")
+        .replaceAll("\n", "")
+        .toLowerCase();
+      return strippedA.indexOf(strippedB) !== -1;
+    };
+    if (e.key === "Enter") {
+      let results = new Set();
+      if (this.state.searchString) {
+        Object.keys(this.state.finance).forEach((date) => {
+          this.state.finance[date].forEach((transaction) => {
+            if (
+              contains(transaction.location, this.state.searchString) ||
+              contains(transaction.description, this.state.searchString)
+            ) {
+              results.add(date);
+              return;
+            }
+          });
         });
+        Object.keys(this.state.diary).forEach((date) => {
+          if (
+            contains(
+              this.state.diary[date].description,
+              this.state.searchString
+            )
+          ) {
+            results.add(date);
+          }
+        });
+      }
+      this.setState({
+        searchResults: results,
       });
     }
-    let subscriptionCopy = [];
-    this.props.userInfo.subscriptions.forEach((sub) => {
-      let newSub = Object.assign({}, sub);
-      let newTags = [];
-      sub.tags.forEach((tag) => {
-        newTags.push(tag);
+  };
+
+  const diaryChanged = (dateOfInterest) => {
+    let currentDiary = this.state.diary[dateOfInterest] || {};
+    let prevDiary = this.props.userInfo.diary[dateOfInterest] || {};
+    let curRating = currentDiary.rating || 0;
+    let prevRating = prevDiary.rating || 0;
+    return (
+      curRating !== prevRating ||
+      currentDiary.description !== prevDiary.description
+    );
+  };
+
+  const financeChanged = (dateOfInterest) => {
+    let currentFinance = this.state.finance[dateOfInterest] || [];
+    let prevFinance = this.props.userInfo.finance[dateOfInterest] || [];
+    if (currentFinance.length != prevFinance.length) {
+      return true;
+    }
+    let changed = false;
+    currentFinance.forEach((_, ind) => {
+      if (changed) {
+        return;
+      }
+      let cur = currentFinance[ind];
+      let prev = prevFinance[ind];
+      if (
+        cur.cost !== prev.cost ||
+        cur.description !== prev.description ||
+        cur.location !== prev.location
+      ) {
+        changed = true;
+      }
+      let curTags = cur.tags;
+      let prevTags = prev.tags;
+      if (curTags.length != prevTags.length) {
+        changed = true;
+      }
+      curTags.forEach((_, ind) => {
+        if (curTags[ind] != prevTags[ind]) {
+          changed = true;
+        }
       });
-      newSub.tags = newTags;
-      subscriptionCopy.push(newSub);
     });
-    this.state = {
-      selectedDate: new Date(Date.now()).toLocaleDateString(),
-      diary: diaryCopy,
-      finance: financeCopy,
-      subscriptions: subscriptionCopy,
-      tags: tagsCopy,
-      tagEdits: {},
+    return changed;
+  };
+
+  const tagsChanged = () => {
+    let currentTags = this.state.tags;
+    let prevTags = this.props.userInfo.tags;
+    if (currentTags.length != prevTags.length) {
+      return true;
+    }
+    let changed = false;
+    currentTags.forEach((_, ind) => {
+      if (currentTags[ind] != prevTags[ind]) {
+        changed = true;
+        return;
+      }
+    });
+    return changed;
+  };
+
+  const startTransactionEdit = (transaction) => {
+    transaction.editing = true;
+    transaction.editCost = transaction.cost;
+    transaction.editLocation = transaction.location;
+    transaction.editDescription = transaction.description;
+    this.setState({
+      finance: this.state.finance,
+    });
+  };
+
+  const commitTransactionEdit = (transaction) => {
+    transaction.editing = false;
+    transaction.cost = transaction.editCost;
+    transaction.location = transaction.editLocation;
+    transaction.description = transaction.editDescription;
+    this.setState({
+      finance: this.state.finance,
+    });
+  };
+
+  const editTransaction = (transaction, fieldName, value) => {
+    transaction[fieldName] = value;
+    this.setState({
+      finance: this.state.finance,
+    });
+  };
+
+  const setDetails = (showing) => {
+    this.setState({
+      hoverDetails: showing,
+    });
+  };
+
+  const toggleShow = (transaction) => {
+    if (this.state.selectedTag !== "") {
+      return;
+    }
+    transaction.show = !transaction.show;
+    this.setState({
+      finance: this.state.finance,
+    });
+  };
+
+  const handleTransactionClick = (transaction) => {
+    this.toggleTag(transaction);
+    this.toggleShow(transaction);
+  };
+
+  const handleSubClick = (sub) => {
+    sub.show = !sub.show;
+    this.setState({
+      subscriptions: this.state.subscriptions,
+    });
+  };
+
+  const tagValid = (tag) => {
+    return tag.length > 0 && this.state.tags.indexOf(tag) == -1;
+  };
+
+  const addTag = () => {
+    if (!this.tagValid(this.state.newTag)) {
+      return;
+    }
+    let newTags = this.state.tags;
+    newTags.push(this.state.newTag);
+    this.setState({
+      tags: newTags,
       newTag: "",
-      selectedTag: "",
-      keys: [],
-      konami: false,
-      bulkPaste: "",
-      hoverDetails: false,
-      searchString: "",
-      searchResults: new Set(),
-    };
-  }
+    });
+  };
 
-  componentDidMount() {
-    document.title = "Home";
+  const startTagEdit = (tagName) => {
+    this.editTag(tagName, tagName);
+  };
+
+  const editTag = (tagName, newTag) => {
+    let newTagEdits = this.state.tagEdits;
+    newTagEdits[tagName] = newTag;
+    this.setState({
+      tagEdits: newTagEdits,
+    });
+  };
+
+  const changeTag = (tagName, toRemove) => {
+    let newTagEdits = this.state.tagEdits;
+    if (toRemove) {
+      let intended = confirm(`Delete tag "${tagName}"?`);
+      if (!intended) {
+        return;
+      }
+    } else if (tagName === newTagEdits[tagName]) {
+      delete newTagEdits[tagName];
+      this.setState({
+        tagEdits: newTagEdits,
+      });
+      return;
+    }
+    let newTag = this.state.tagEdits[tagName] || "";
+    let newTags = this.state.tags;
+    let ind = newTags.indexOf(tagName);
+    if (ind == -1 || (!toRemove && !this.tagValid(newTag))) {
+      return;
+    }
+    if (toRemove) {
+      newTags.splice(ind, 1);
+    } else {
+      newTags[ind] = newTag;
+      delete newTagEdits[tagName];
+    }
+    let newFinance = this.state.finance;
+    Object.keys(newFinance).forEach((key) => {
+      newFinance[key].forEach((el) => {
+        let tagIndex = el.tags.indexOf(tagName);
+        if (tagIndex > -1) {
+          if (toRemove) {
+            el.tags.splice(tagIndex, 1);
+          } else {
+            el.tags[tagIndex] = newTag;
+          }
+        }
+      });
+    });
+    let nextSelectedTag = this.state.selectedTag;
+    if (toRemove && nextSelectedTag === tagName) {
+      nextSelectedTag = "";
+    } else if (!toRemove && nextSelectedTag === tagName) {
+      nextSelectedTag = newTag;
+    }
+    this.setState({
+      tags: newTags,
+      finance: newFinance,
+      selectedTag: nextSelectedTag,
+      tagEdits: newTagEdits,
+    });
+  };
+
+  const selectTag = (tag) => {
+    this.setState({
+      selectedTag: this.state.selectedTag === tag ? "" : tag,
+    });
+  };
+
+  const toggleTag = (transaction) => {
+    if (this.state.selectedTag === "") {
+      return;
+    }
+    let tagList = transaction.tags;
+    let tagIndex = tagList.indexOf(this.state.selectedTag);
+    if (tagIndex === -1) {
+      tagList.push(this.state.selectedTag);
+    } else {
+      tagList.splice(tagIndex, 1);
+    }
+    this.setState({
+      finance: this.state.finance,
+    });
+  };
+
+  const updateTagField = (value) => {
+    this.setState({
+      newTag: value,
+    });
+  };
+
+  const updateFinanceField = (fieldName, value) => {
+    let newTransaction = this.state.newTransaction;
+    newTransaction[fieldName] = value;
+    this.setState({
+      newTransaction: newTransaction,
+    });
+  };
+
+  const newTransactionInvalid = () => {
+    let newTransaction = this.state.newTransaction;
+    return newTransaction.description == "" || newTransaction.location == "";
+  };
+
+  const addTransaction = () => {
+    let newFinance = this.state.finance;
+    if (!newFinance.hasOwnProperty(this.state.selectedDate)) {
+      newFinance[this.state.selectedDate] = [];
+    }
+    let newTransaction = Object.assign({}, EMPTY_TRANSACTION);
+    newTransaction.tags = [];
+    newFinance[this.state.selectedDate].push(newTransaction);
+    this.setState({
+      finance: newFinance,
+    });
+  };
+
+  const deleteTransaction = (ind) => {
+    let newFinance = this.state.finance;
+    newFinance[this.state.selectedDate].splice(ind, 1);
+    this.setState({
+      finance: newFinance,
+    });
+  };
+
+  const createStars = () => {
+    let unfilled = "/media/star_light_unfilled.svg";
+    let filled = "/media/star_light_filled.svg";
+    return [...Array(STAR_MAX).keys()].map((ind) => (
+      <img
+        key={ind}
+        className="diaryStars"
+        src={ind < this.state.displayRating ? filled : unfilled}
+        onMouseEnter={() => this.changeDisplay(ind + 1)}
+        onMouseLeave={() => this.changeDisplay(this.state.rating)}
+        onClick={() =>
+          this.updateDiary(
+            this.state.diaryText,
+            this.state.rating === ind + 1 ? 0 : ind + 1
+          )
+        }
+      />
+    ));
+  };
+
+  const changeDisplay = (num) => {
+    this.setState({
+      displayRating: num,
+    });
+  };
+
+  const calendarChange = (date) => {
+    if (_.hasIn(diary, date)) {
+      let entry = this.state.diary[date];
+      this.setState({
+        selectedDate: date,
+        displayRating: entry.rating,
+        rating: entry.rating,
+        diaryText: entry.description,
+      });
+    } else {
+      this.setState({
+        selectedDate: date,
+        displayRating: 0,
+        rating: 0,
+        diaryText: "",
+      });
+    }
+  };
+
+  const updateDiary = (text, rating) => {
+    let newDiary = this.state.diary;
+    if (text != "") {
+      newDiary[this.state.selectedDate] = {
+        description: text,
+        rating: rating,
+      };
+    } else {
+      rating = 0;
+      delete newDiary[this.state.selectedDate];
+    }
+    this.setState({
+      diary: newDiary,
+      diaryText: text,
+      rating: rating,
+      displayRating: rating,
+    });
+  };
+
+  const updateBulk = (e) => {
+    this.setState({
+      bulkPaste: e.target.value,
+    });
+  };
+
+  const saveBulk = () => {
+    let newDiary = this.state.diary;
+    let dailyEntries = this.state.bulkPaste.split("\n\n");
+    dailyEntries.forEach((dailyLog) => {
+      let body = dailyLog.split("\n");
+      let header = body.splice(0, 1)[0];
+      let tokens = header.split(" ");
+      let day = tokens[0];
+      let rating = tokens[1].substring(1);
+      newDiary[day] = {
+        description: body.join("\n"),
+        rating: rating,
+      };
+    });
+    this.setState({
+      diary: newDiary,
+    });
     this.calendarChange(this.state.selectedDate);
-    window.addEventListener("keydown", this.handleKeyDown);
-  }
+    this.toggleKonami();
+  };
 
-  componentWillUnmount() {
-    window.removeEventListener("keydown", this.handleKeyDown);
-  }
+  const isEditingAnything = () => {
+    let result = false;
+    Object.values(this.state.finance).forEach((transactionList) => {
+      if (result) {
+        return;
+      }
+      transactionList.forEach((t) => {
+        if (t.editing) {
+          result = true;
+          return;
+        }
+      });
+    });
+    return result;
+  };
+
+  const saveInfo = () => {
+    if (this.isEditingAnything()) {
+      return;
+    }
+    Object.values(this.state.finance).forEach((transactionList) => {
+      transactionList.forEach((t) => {
+        delete t.show;
+        delete t.editing;
+        delete t.editCost;
+        delete t.editLocation;
+        delete t.editDescription;
+      });
+    });
+    let body = {
+      diary: this.state.diary,
+      tags: this.state.tags,
+      finance: this.state.finance,
+      subscriptions: this.state.subscriptions,
+    };
+    fetch("/api/save_info", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+    }).then((res) => {
+      if (res.status === 200) {
+        window.location.reload();
+      } else {
+        alert(
+          "There was an issue saving your entry. Please make sure you're logged in."
+        );
+      }
+    });
+  };
+
+  const handleKeyDown = (event: any) => {
+    if (event.key === "Escape") {
+      selectTag("");
+    }
+    let newKeys = _.cloneDeep(keys);
+    newKeys.push(event.key.toLowerCase());
+    newKeys = newKeys.slice(Math.max(newKeys.length - KONAMI_CODE.length, 0));
+    setKeys(newKeys)
+    if (JSON.stringify(keys) == JSON.stringify(KONAMI_CODE)) {
+      toggleKonami();
+    }
+  };
+
+  const toggleKonami = () => {
+    setKonami(!konami)
+  };
 
   render() {
     const sortByDate = (a, b) => {
@@ -140,7 +577,7 @@ export default class Home extends Component {
             let dateKey = properties.date.toLocaleDateString();
             return incompleteDates.has(dateKey) ? (
               <div
-                className={classNames("calendarIncomplete", {
+                className={clsx("calendarIncomplete", {
                   details: this.state.hoverDetails,
                 })}
               >
@@ -159,7 +596,7 @@ export default class Home extends Component {
                   name="searchString"
                   id="searchString"
                   placeholder="Search... (press Enter)"
-                  onChange={(e) => this.updateSearch(e.target.value)}
+                  onChange={(e) => setSearchString(e.target.value)}
                   onKeyPress={this.maybeSearch}
                 />
                 <div
@@ -222,7 +659,7 @@ export default class Home extends Component {
               }
             />
             <div
-              className={classNames("button saveButton", {
+              className={clsx("button saveButton", {
                 disabled: this.isEditingAnything(),
               })}
               onClick={this.saveInfo}
@@ -246,7 +683,7 @@ export default class Home extends Component {
                   return (
                     <div key={ind} className="finTag">
                       <div
-                        className={classNames("finTagName", {
+                        className={clsx("finTagName", {
                           selected: el == this.state.selectedTag,
                         })}
                         onClick={() => this.selectTag(el)}
@@ -290,7 +727,7 @@ export default class Home extends Component {
               </div>
               <div className="finTagCreate">
                 <div
-                  className={classNames("smallButton text", {
+                  className={clsx("smallButton text", {
                     green: this.tagValid(this.state.newTag),
                   })}
                   onClick={this.addTag}
@@ -350,7 +787,7 @@ export default class Home extends Component {
                           ))}
                         </div>
                         <div
-                          className={classNames("transactionCost", {
+                          className={clsx("transactionCost", {
                             zero: !sub.cost || parseInt(sub.cost) === 0,
                           })}
                           onClick={() => this.handleSubClick(sub)}
@@ -404,7 +841,7 @@ export default class Home extends Component {
                         ))}
                       </div>
                       <div
-                        className={classNames("transactionCost", {
+                        className={clsx("transactionCost", {
                           zero:
                             !el.editing &&
                             (!el.cost || parseInt(el.cost) === 0),
@@ -485,478 +922,6 @@ export default class Home extends Component {
       </div>
     );
   }
-
-  updateSearch = (searchString) => {
-    this.setState({
-      searchString,
-    });
-  };
-
-  maybeSearch = (e) => {
-    const contains = (stringA, stringB) => {
-      const strippedA = (stringA || "")
-        .replaceAll(" ", "")
-        .replaceAll("\t", "")
-        .replaceAll("\n", "")
-        .toLowerCase();
-      const strippedB = stringB
-        .replaceAll(" ", "")
-        .replaceAll("\t", "")
-        .replaceAll("\n", "")
-        .toLowerCase();
-      return strippedA.indexOf(strippedB) !== -1;
-    };
-    if (e.key === "Enter") {
-      let results = new Set();
-      if (this.state.searchString) {
-        Object.keys(this.state.finance).forEach((date) => {
-          this.state.finance[date].forEach((transaction) => {
-            if (
-              contains(transaction.location, this.state.searchString) ||
-              contains(transaction.description, this.state.searchString)
-            ) {
-              results.add(date);
-              return;
-            }
-          });
-        });
-        Object.keys(this.state.diary).forEach((date) => {
-          if (
-            contains(
-              this.state.diary[date].description,
-              this.state.searchString
-            )
-          ) {
-            results.add(date);
-          }
-        });
-      }
-      this.setState({
-        searchResults: results,
-      });
-    }
-  };
-
-  diaryChanged = (dateOfInterest) => {
-    let currentDiary = this.state.diary[dateOfInterest] || {};
-    let prevDiary = this.props.userInfo.diary[dateOfInterest] || {};
-    let curRating = currentDiary.rating || 0;
-    let prevRating = prevDiary.rating || 0;
-    return (
-      curRating !== prevRating ||
-      currentDiary.description !== prevDiary.description
-    );
-  };
-
-  financeChanged = (dateOfInterest) => {
-    let currentFinance = this.state.finance[dateOfInterest] || [];
-    let prevFinance = this.props.userInfo.finance[dateOfInterest] || [];
-    if (currentFinance.length != prevFinance.length) {
-      return true;
-    }
-    let changed = false;
-    currentFinance.forEach((_, ind) => {
-      if (changed) {
-        return;
-      }
-      let cur = currentFinance[ind];
-      let prev = prevFinance[ind];
-      if (
-        cur.cost !== prev.cost ||
-        cur.description !== prev.description ||
-        cur.location !== prev.location
-      ) {
-        changed = true;
-      }
-      let curTags = cur.tags;
-      let prevTags = prev.tags;
-      if (curTags.length != prevTags.length) {
-        changed = true;
-      }
-      curTags.forEach((_, ind) => {
-        if (curTags[ind] != prevTags[ind]) {
-          changed = true;
-        }
-      });
-    });
-    return changed;
-  };
-
-  tagsChanged = () => {
-    let currentTags = this.state.tags;
-    let prevTags = this.props.userInfo.tags;
-    if (currentTags.length != prevTags.length) {
-      return true;
-    }
-    let changed = false;
-    currentTags.forEach((_, ind) => {
-      if (currentTags[ind] != prevTags[ind]) {
-        changed = true;
-        return;
-      }
-    });
-    return changed;
-  };
-
-  startTransactionEdit = (transaction) => {
-    transaction.editing = true;
-    transaction.editCost = transaction.cost;
-    transaction.editLocation = transaction.location;
-    transaction.editDescription = transaction.description;
-    this.setState({
-      finance: this.state.finance,
-    });
-  };
-
-  commitTransactionEdit = (transaction) => {
-    transaction.editing = false;
-    transaction.cost = transaction.editCost;
-    transaction.location = transaction.editLocation;
-    transaction.description = transaction.editDescription;
-    this.setState({
-      finance: this.state.finance,
-    });
-  };
-
-  editTransaction = (transaction, fieldName, value) => {
-    transaction[fieldName] = value;
-    this.setState({
-      finance: this.state.finance,
-    });
-  };
-
-  setDetails = (showing) => {
-    this.setState({
-      hoverDetails: showing,
-    });
-  };
-
-  toggleShow = (transaction) => {
-    if (this.state.selectedTag !== "") {
-      return;
-    }
-    transaction.show = !transaction.show;
-    this.setState({
-      finance: this.state.finance,
-    });
-  };
-
-  handleTransactionClick = (transaction) => {
-    this.toggleTag(transaction);
-    this.toggleShow(transaction);
-  };
-
-  handleSubClick = (sub) => {
-    sub.show = !sub.show;
-    this.setState({
-      subscriptions: this.state.subscriptions,
-    });
-  };
-
-  tagValid = (tag) => {
-    return tag.length > 0 && this.state.tags.indexOf(tag) == -1;
-  };
-
-  addTag = () => {
-    if (!this.tagValid(this.state.newTag)) {
-      return;
-    }
-    let newTags = this.state.tags;
-    newTags.push(this.state.newTag);
-    this.setState({
-      tags: newTags,
-      newTag: "",
-    });
-  };
-
-  startTagEdit = (tagName) => {
-    this.editTag(tagName, tagName);
-  };
-
-  editTag = (tagName, newTag) => {
-    let newTagEdits = this.state.tagEdits;
-    newTagEdits[tagName] = newTag;
-    this.setState({
-      tagEdits: newTagEdits,
-    });
-  };
-
-  changeTag = (tagName, toRemove) => {
-    let newTagEdits = this.state.tagEdits;
-    if (toRemove) {
-      let intended = confirm(`Delete tag "${tagName}"?`);
-      if (!intended) {
-        return;
-      }
-    } else if (tagName === newTagEdits[tagName]) {
-      delete newTagEdits[tagName];
-      this.setState({
-        tagEdits: newTagEdits,
-      });
-      return;
-    }
-    let newTag = this.state.tagEdits[tagName] || "";
-    let newTags = this.state.tags;
-    let ind = newTags.indexOf(tagName);
-    if (ind == -1 || (!toRemove && !this.tagValid(newTag))) {
-      return;
-    }
-    if (toRemove) {
-      newTags.splice(ind, 1);
-    } else {
-      newTags[ind] = newTag;
-      delete newTagEdits[tagName];
-    }
-    let newFinance = this.state.finance;
-    Object.keys(newFinance).forEach((key) => {
-      newFinance[key].forEach((el) => {
-        let tagIndex = el.tags.indexOf(tagName);
-        if (tagIndex > -1) {
-          if (toRemove) {
-            el.tags.splice(tagIndex, 1);
-          } else {
-            el.tags[tagIndex] = newTag;
-          }
-        }
-      });
-    });
-    let nextSelectedTag = this.state.selectedTag;
-    if (toRemove && nextSelectedTag === tagName) {
-      nextSelectedTag = "";
-    } else if (!toRemove && nextSelectedTag === tagName) {
-      nextSelectedTag = newTag;
-    }
-    this.setState({
-      tags: newTags,
-      finance: newFinance,
-      selectedTag: nextSelectedTag,
-      tagEdits: newTagEdits,
-    });
-  };
-
-  selectTag = (tag) => {
-    this.setState({
-      selectedTag: this.state.selectedTag === tag ? "" : tag,
-    });
-  };
-
-  toggleTag = (transaction) => {
-    if (this.state.selectedTag === "") {
-      return;
-    }
-    let tagList = transaction.tags;
-    let tagIndex = tagList.indexOf(this.state.selectedTag);
-    if (tagIndex === -1) {
-      tagList.push(this.state.selectedTag);
-    } else {
-      tagList.splice(tagIndex, 1);
-    }
-    this.setState({
-      finance: this.state.finance,
-    });
-  };
-
-  updateTagField = (value) => {
-    this.setState({
-      newTag: value,
-    });
-  };
-
-  updateFinanceField = (fieldName, value) => {
-    let newTransaction = this.state.newTransaction;
-    newTransaction[fieldName] = value;
-    this.setState({
-      newTransaction: newTransaction,
-    });
-  };
-
-  newTransactionInvalid = () => {
-    let newTransaction = this.state.newTransaction;
-    return newTransaction.description == "" || newTransaction.location == "";
-  };
-
-  addTransaction = () => {
-    let newFinance = this.state.finance;
-    if (!newFinance.hasOwnProperty(this.state.selectedDate)) {
-      newFinance[this.state.selectedDate] = [];
-    }
-    let newTransaction = Object.assign({}, EMPTY_TRANSACTION);
-    newTransaction.tags = [];
-    newFinance[this.state.selectedDate].push(newTransaction);
-    this.setState({
-      finance: newFinance,
-    });
-  };
-
-  deleteTransaction = (ind) => {
-    let newFinance = this.state.finance;
-    newFinance[this.state.selectedDate].splice(ind, 1);
-    this.setState({
-      finance: newFinance,
-    });
-  };
-
-  createStars = () => {
-    let unfilled = "/media/star_light_unfilled.svg";
-    let filled = "/media/star_light_filled.svg";
-    return [...Array(STAR_MAX).keys()].map((ind) => (
-      <img
-        key={ind}
-        className="diaryStars"
-        src={ind < this.state.displayRating ? filled : unfilled}
-        onMouseEnter={() => this.changeDisplay(ind + 1)}
-        onMouseLeave={() => this.changeDisplay(this.state.rating)}
-        onClick={() =>
-          this.updateDiary(
-            this.state.diaryText,
-            this.state.rating === ind + 1 ? 0 : ind + 1
-          )
-        }
-      />
-    ));
-  };
-
-  changeDisplay = (num) => {
-    this.setState({
-      displayRating: num,
-    });
-  };
-
-  calendarChange = (date) => {
-    if (this.state.diary.hasOwnProperty(date)) {
-      let entry = this.state.diary[date];
-      this.setState({
-        selectedDate: date,
-        displayRating: entry.rating,
-        rating: entry.rating,
-        diaryText: entry.description,
-      });
-    } else {
-      this.setState({
-        selectedDate: date,
-        displayRating: 0,
-        rating: 0,
-        diaryText: "",
-      });
-    }
-  };
-
-  updateDiary = (text, rating) => {
-    let newDiary = this.state.diary;
-    if (text != "") {
-      newDiary[this.state.selectedDate] = {
-        description: text,
-        rating: rating,
-      };
-    } else {
-      rating = 0;
-      delete newDiary[this.state.selectedDate];
-    }
-    this.setState({
-      diary: newDiary,
-      diaryText: text,
-      rating: rating,
-      displayRating: rating,
-    });
-  };
-
-  updateBulk = (e) => {
-    this.setState({
-      bulkPaste: e.target.value,
-    });
-  };
-
-  saveBulk = () => {
-    let newDiary = this.state.diary;
-    let dailyEntries = this.state.bulkPaste.split("\n\n");
-    dailyEntries.forEach((dailyLog) => {
-      let body = dailyLog.split("\n");
-      let header = body.splice(0, 1)[0];
-      let tokens = header.split(" ");
-      let day = tokens[0];
-      let rating = tokens[1].substring(1);
-      newDiary[day] = {
-        description: body.join("\n"),
-        rating: rating,
-      };
-    });
-    this.setState({
-      diary: newDiary,
-    });
-    this.calendarChange(this.state.selectedDate);
-    this.toggleKonami();
-  };
-
-  isEditingAnything = () => {
-    let result = false;
-    Object.values(this.state.finance).forEach((transactionList) => {
-      if (result) {
-        return;
-      }
-      transactionList.forEach((t) => {
-        if (t.editing) {
-          result = true;
-          return;
-        }
-      });
-    });
-    return result;
-  };
-
-  saveInfo = () => {
-    if (this.isEditingAnything()) {
-      return;
-    }
-    Object.values(this.state.finance).forEach((transactionList) => {
-      transactionList.forEach((t) => {
-        delete t.show;
-        delete t.editing;
-        delete t.editCost;
-        delete t.editLocation;
-        delete t.editDescription;
-      });
-    });
-    let body = {
-      diary: this.state.diary,
-      tags: this.state.tags,
-      finance: this.state.finance,
-      subscriptions: this.state.subscriptions,
-    };
-    fetch("/api/save_info", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(body),
-    }).then((res) => {
-      if (res.status === 200) {
-        window.location.reload();
-      } else {
-        alert(
-          "There was an issue saving your entry. Please make sure you're logged in."
-        );
-      }
-    });
-  };
-
-  handleKeyDown = (event) => {
-    if (event.key === "Escape") {
-      this.selectTag("");
-    }
-    let keys = this.state.keys;
-    keys.push(event.key.toLowerCase());
-    keys = keys.slice(Math.max(keys.length - KONAMI_CODE.length, 0));
-    this.setState({
-      keys: keys,
-    });
-    if (JSON.stringify(keys) == JSON.stringify(KONAMI_CODE)) {
-      this.toggleKonami();
-    }
-  };
-
-  toggleKonami = () => {
-    this.setState({
-      konami: !this.state.konami,
-    });
-  };
 }
+
+export default Home;

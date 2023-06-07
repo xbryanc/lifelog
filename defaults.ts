@@ -65,6 +65,16 @@ Finance structure: object from date strings to:
 ]
 */
 
+export interface User {
+  name: string;
+  googleid: string;
+  diary: Diary;
+  finance: FinanceLog;
+  tags: string[];
+  subscriptions: Subscription[];
+  goals: GoalsList;
+}
+
 export type FinanceLog = Record<string, Transaction[]>;
 
 export interface Transaction {
@@ -122,7 +132,7 @@ export enum Span {
 
 export const NAVBAR_HAMBURGER_WIDTH_THRESHOLD = 991;
 
-export const KONAMI_CODE = [
+export const KONAMI_CODE = Object.freeze([
   "arrowup",
   "arrowup",
   "arrowdown",
@@ -133,14 +143,14 @@ export const KONAMI_CODE = [
   "arrowright",
   "b",
   "a",
-];
+]);
 
-export const EMPTY_TRANSACTION: Transaction = {
+export const EMPTY_TRANSACTION: Transaction = Object.freeze({
   cost: 0,
   description: "",
   location: "",
   tags: [],
-};
+});
 
 export const EMPTY_SUBSCRIPTION: Subscription = {
   cost: 0,
@@ -151,11 +161,11 @@ export const EMPTY_SUBSCRIPTION: Subscription = {
   end: "",
   frequency: "",
 };
-export const EMPTY_GOAL: Goal = {
+export const EMPTY_GOAL: Goal = Object.freeze({
   name: "",
   description: "",
   status: GoalStatus.IN_PROGRESS,
-};
+});
 
 export const STAR_MAX = 10;
 export const INF = 1e18; // large number

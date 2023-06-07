@@ -1,54 +1,417 @@
-import React, { Component } from "react";
-import Calendar from "react-calendar";
-import classNames from "classnames";
+import React, { useState, useEffect } from "react";
+import _ from 'lodash';
+const Calendar = require("react-calendar");
+import clsx from "clsx";
 import { PieChart } from "react-minimal-pie-chart";
 import "../../css/app.css";
 import "../../css/profile.css";
 
-import CONSTANTS from "../../../../defaults";
+import { EMPTY_GOAL, Goal, GoalStatus, User } from "../../../../defaults";
+import { subApplies, subtractPreset, toGoalsKey } from "../../../../helpers";
 
-export default class Profile extends Component {
-  constructor(props) {
-    super(props);
-    let subscriptionCopy = [];
-    this.props.userInfo.subscriptions.forEach((sub) => {
-      let newSub = Object.assign({}, sub);
-      let newTags = [];
-      sub.tags.forEach((tag) => {
-        newTags.push(tag);
-      });
-      newSub.tags = newTags;
-      subscriptionCopy.push(newSub);
+interface ProfileProps {
+  userInfo: User;
+}
+
+const Profile: React.FC<ProfileProps> = ({userInfo}) => {
+  const [subscriptions, setSubscriptions] = useState(_.cloneDeep(userInfo.subscriptions));
+  const [finance, setFinance] = useState(_.cloneDeep(userInfo.finance));
+  const [showSelect, setShowSelect] = useState(false);
+  const [chartStart, setChartStart] = useState(new Date(Date.now()).toLocaleDateString());
+  const [chartEnd, setChartEnd] = useState(new Date(Date.now()).toLocaleDateString());
+  const [selectingChart, setSelectingChart] = useState(false);
+  const [hoverKey, setHoverKey] = useState("");
+  const [defaultHoverKey, _setDefaultHoverKey] = useState("");
+  const [goalsKey, setGoalsKey] = useState(toGoalsKey(new Date(Date.now()).toLocaleDateString()));
+  const [goals, setGoals] = useState(_.cloneDeep(userInfo.goals));
+
+  useEffect(() => {
+    document.title = "Profile";
+  }, [])
+
+  const isEditingAnything = () => {
+    let result = false;
+    subscriptions.forEach((sub) => {
+      if (sub.editing) {
+        result = true;
+        return;
+      }
     });
-    let goalsCopy = {};
-    let originalGoals = this.props.userInfo.goals;
-    if (originalGoals) {
-      Object.keys(originalGoals).forEach((key) => {
-        goalsCopy[key] = [];
-        originalGoals[key].forEach((el) => {
-          let newEl = Object.assign({}, el);
-          goalsCopy[key].push(newEl);
+    Object.values(goals).forEach((goalsList) => {
+      goalsList.forEach((goal) => {
+        if (goal.editing) {
+          result = true;
+          return;
+        }
+      });
+    });
+    return result;
+  };
+
+  const setPresetSpan = (span) => {
+    let today = new Date(Date.now()).toLocaleDateString();
+    let prev = subtractPreset(today, span);
+    this.setState({
+      chartStart: prev,
+      chartEnd: today,
+    });
+  };
+
+  const setDefaultHoverKey = (key: string) => {
+      setDefaultHoverKey(defaultHoverKey === key ? "" : key)
+  };
+
+  const getSpendingByCategory = () => {
+    let startDate = new Date(this.state.chartStart);
+    let endDate = new Date(this.state.chartEnd);
+    let total = 0;
+    let itemized = {};
+    let transactionList = {};
+    if (endDate < startDate) {
+      return { total, itemized, transactionList };
+    }
+    const addSpending = (tag, cost, location, date) => {
+      if (!cost || parseInt(cost) === 0) {
+        return;
+      }
+      cost = parseInt(cost);
+      total += cost;
+      if (tag !== "") {
+        if (!itemized.hasOwnProperty(tag)) {
+          itemized[tag] = 0;
+          transactionList[tag] = [];
+        }
+        itemized[tag] += cost;
+        transactionList[tag].push({
+          cost,
+          location,
+          date,
         });
+      }
+    };
+    for (
+      let date = startDate;
+      date <= endDate;
+      date.setDate(date.getDate() + 1)
+    ) {
+      this.state.subscriptions.forEach((sub) => {
+        if (subApplies(sub, date)) {
+          addSpending(
+            sub.tags.length === 0 ? "MISC" : sub.tags[0],
+            sub.cost,
+            sub.location,
+            date.toLocaleDateString()
+          );
+        }
+      });
+      let dateStr = date.toLocaleDateString();
+      let transactions = this.state.finance.hasOwnProperty(dateStr)
+        ? this.state.finance[dateStr]
+        : [];
+      transactions.forEach((transaction) => {
+        addSpending(
+          transaction.tags.length === 0 ? "MISC" : transaction.tags[0],
+          transaction.cost,
+          transaction.location,
+          date.toLocaleDateString()
+        );
       });
     }
-    let today = new Date(Date.now()).toLocaleDateString();
-    this.state = {
-      subscriptions: subscriptionCopy,
-      finance: this.props.userInfo.finance, // DO NOT MODIFY, DIRECT REFERENCE
-      setShow: false,
-      chartStart: today,
-      chartEnd: today,
-      selectingChart: false,
-      hoverKey: "",
-      defaultHoverKey: "",
-      goalsKey: CONSTANTS.TO_GOALS_KEY(today),
-      goals: goalsCopy,
-    };
-  }
+    return { total, itemized, transactionList };
+  };
 
-  componentDidMount() {
-    document.title = "Profile";
-  }
+  const subChanged = () => {
+    let currentSubs = this.state.subscriptions;
+    let prevSubs = this.props.userInfo.subscriptions;
+    if (currentSubs.length != prevSubs.length) {
+      return true;
+    }
+    let changed = false;
+    currentSubs.forEach((_, ind) => {
+      if (changed) {
+        return;
+      }
+      let cur = currentSubs[ind];
+      let prev = prevSubs[ind];
+      if (
+        cur.cost !== prev.cost ||
+        cur.description !== prev.description ||
+        cur.location !== prev.location ||
+        cur.start !== prev.start ||
+        cur.end !== prev.end ||
+        cur.frequency != prev.frequency
+      ) {
+        changed = true;
+      }
+      let curTags = cur.tags;
+      let prevTags = prev.tags;
+      if (curTags.length != prevTags.length) {
+        changed = true;
+      }
+      curTags.forEach((_, ind) => {
+        if (curTags[ind] != prevTags[ind]) {
+          changed = true;
+        }
+      });
+    });
+    return changed;
+  };
+
+  const goalsChanged = () => {
+    let currentGoals = this.state.goals;
+    let prevGoals = this.props.userInfo.goals;
+    let changed = false;
+    let prevKeys = Object.keys(prevGoals);
+    let currentKeys = Object.keys(currentGoals);
+    if (
+      prevKeys.length !== currentKeys.length ||
+      !prevKeys.every((key) => currentKeys.includes(key)) ||
+      !currentKeys.every((key) => prevKeys.includes(key))
+    ) {
+      return true;
+    }
+    currentKeys.forEach((key) => {
+      if (changed) {
+        return;
+      }
+      let prevEntries = prevGoals[key] || [];
+      let currentEntries = currentGoals[key] || [];
+      if (prevEntries.length !== currentEntries.length) {
+        changed = true;
+        return;
+      }
+      currentEntries.forEach((_, ind) => {
+        let cur = currentEntries[ind];
+        let prev = prevEntries[ind];
+        if (
+          cur.name !== prev.name ||
+          cur.description !== prev.description ||
+          cur.status !== prev.status
+        ) {
+          changed = true;
+        }
+      });
+    });
+    return changed;
+  };
+
+  const addGoal = () => {
+    let newGoals = _.cloneDeep(goals);
+    let newGoal = _.cloneDeep(EMPTY_GOAL);
+    newGoals[goalsKey] = (
+      newGoals[goalsKey] || []
+    ).concat(newGoal);
+    setGoals(newGoals);
+  };
+
+  const deleteGoal = (ind) => {
+    let newGoals = _.cloneDeep(goals);
+    newGoals[goalsKey].splice(ind, 1);
+    setGoals(newGoals);
+  };
+
+  const cycleGoalStatus = (goal: Goal) => {
+    if (goal.status === GoalStatus.FAILED) {
+      goal.status = GoalStatus.IN_PROGRESS;
+    } else if (goal.status === GoalStatus.IN_PROGRESS) {
+      goal.status = GoalStatus.PASSED;
+    } else if (goal.status === GoalStatus.PASSED) {
+      goal.status = GoalStatus.FAILED;
+    }
+    setGoals(goals);
+  };
+
+  const editGoal = (goal, fieldName, value) => {
+    goal[fieldName] = value;
+    this.setState({
+      goals: this.state.goals,
+    });
+  };
+
+  const moveGoalsKey = (diff) => {
+    let [year, quarter] = this.state.goalsKey.split("-");
+    let rawValue = Number.parseInt(year) * 4 + Number.parseInt(quarter);
+    let newValue = rawValue + diff;
+    this.setState({
+      goalsKey: `${Math.floor(newValue / 4)}-${newValue % 4}`,
+    });
+  };
+
+  const addSub = () => {
+    let newSubscriptions = this.state.subscriptions;
+    let newSub = Object.assign({}, CONSTANTS.EMPTY_SUBSCRIPTION);
+    newSub.tags = [];
+    newSubscriptions.push(newSub);
+    this.setState({
+      subscriptions: newSubscriptions,
+    });
+  };
+
+  const deleteSub = (ind) => {
+    let newSubscriptions = this.state.subscriptions;
+    newSubscriptions.splice(ind, 1);
+    this.setState({
+      subscriptions: newSubscriptions,
+    });
+  };
+
+  const editSub = (sub, fieldName, value) => {
+    sub[fieldName] = value;
+    this.setState({
+      subscriptions: this.state.subscriptions,
+    });
+  };
+
+  const selectFrequency = (el, freq) => {
+    el.frequency = freq;
+    this.setState({
+      subscriptions: this.state.subscriptions,
+    });
+  };
+
+  const selectDate = (sub, fieldName) => {
+    if (!sub.editing) {
+      return;
+    }
+    let emptyDate = !sub[fieldName] || sub[fieldName] === "";
+    this.setState({
+      setSub: sub,
+      setField: fieldName,
+      setDate: emptyDate
+        ? new Date(Date.now()).toLocaleDateString()
+        : sub[fieldName],
+      showSelect: true,
+    });
+  };
+
+  const selectChartDate = (fieldName) => {
+    let relevantDate =
+      fieldName === "start" ? this.state.chartStart : this.state.chartEnd;
+    this.setState({
+      chartDateField: fieldName,
+      setChartDate: relevantDate,
+      selectingChart: true,
+    });
+  };
+
+  const changeDate = (date) => {
+    this.setState({
+      setDate: date,
+    });
+  };
+
+  const changeChartDate = (date) => {
+    this.setState({
+      setChartDate: date,
+    });
+  };
+
+  const commitDate = () => {
+    this.state.setSub[this.state.setField] = this.state.setDate;
+    this.setState({
+      showSelect: false,
+      subscriptions: this.state.subscriptions,
+    });
+  };
+
+  const commitChartDate = () => {
+    this.setState({
+      selectingChart: false,
+      [this.state.chartDateField === "start" ? "chartStart" : "chartEnd"]:
+        this.state.setChartDate,
+    });
+  };
+
+  const handleGoalClick = (goal) => {
+    goal.show = !goal.show;
+    this.setState({
+      goals: this.state.goals,
+    });
+  };
+
+  const handleSubClick = (sub) => {
+    sub.show = !sub.show;
+    this.setState({
+      subscriptions: this.state.subscriptions,
+    });
+  };
+
+  const formatSubTime = (date) => {
+    if (!date || date === "") {
+      return "\u221E";
+    }
+    return date;
+  };
+
+  const formatFrequency = (freq) => {
+    if (!freq || freq === "") {
+      return "(SET)";
+    }
+    return `(${freq})`;
+  };
+
+  const startGoalEdit = (goal) => {
+    goal.editing = true;
+    goal.editName = goal.name;
+    goal.editDescription = goal.description;
+    this.setState({
+      goals: this.state.goals,
+    });
+  };
+
+  const commitGoalEdit = (goal) => {
+    goal.editing = false;
+    goal.name = goal.editName;
+    goal.description = goal.editDescription;
+    this.setState({
+      goals: this.state.goals,
+    });
+  };
+
+  const startSubEdit = (sub) => {
+    sub.editing = true;
+    sub.editCost = sub.cost;
+    sub.editLocation = sub.location;
+    sub.editDescription = sub.description;
+    this.setState({
+      subscriptions: this.state.subscriptions,
+    });
+  };
+
+  const commitSubEdit = (sub) => {
+    sub.editing = false;
+    sub.cost = sub.editCost;
+    sub.location = sub.editLocation;
+    sub.description = sub.editDescription;
+    this.setState({
+      subscriptions: this.state.subscriptions,
+    });
+  };
+
+  const saveProfile = () => {
+    if (isEditingAnything()) {
+      return;
+    }
+    let body = {
+      subscriptions,
+      goals,
+    };
+    fetch("/api/save_profile", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+    }).then((res) => {
+      if (res.status === 200) {
+        window.location.reload();
+      } else {
+        alert(
+          "There was an issue saving your entry. Please make sure you're logged in."
+        );
+      }
+    });
+  };
 
   render() {
     const curKey = this.state.hoverKey || this.state.defaultHoverKey;
@@ -82,7 +445,7 @@ export default class Profile extends Component {
             </div>
           </div>
         )}
-        {!this.state.setShow ? null : (
+        {!this.state.showSelect ? null : (
           <div className="selectContainer" onClick={this.commitDate}>
             <div className="selectPopup" onClick={(e) => e.stopPropagation()}>
               Selecting {this.state.setField} date as {this.state.setDate}
@@ -135,7 +498,7 @@ export default class Profile extends Component {
                     )}
                   </div>
                   <div
-                    className={classNames("subTimeFrame", {
+                    className={clsx("subTimeFrame", {
                       editing: el.editing,
                     })}
                     onClick={() => {
@@ -143,7 +506,7 @@ export default class Profile extends Component {
                     }}
                   >
                     <div
-                      className={classNames("subTimeStart", {
+                      className={clsx("subTimeStart", {
                         editing: el.editing,
                       })}
                       onClick={() => this.selectDate(el, "start")}
@@ -152,7 +515,7 @@ export default class Profile extends Component {
                     </div>
                     <div className="subTimeDash">-</div>
                     <div
-                      className={classNames("subTimeEnd", {
+                      className={clsx("subTimeEnd", {
                         editing: el.editing,
                       })}
                       onClick={() => this.selectDate(el, "end")}
@@ -194,7 +557,7 @@ export default class Profile extends Component {
                     ))}
                   </div>
                   <div
-                    className={classNames("subCost", {
+                    className={clsx("subCost", {
                       zero:
                         !el.editing && (!el.cost || parseInt(el.cost) === 0),
                     })}
@@ -259,10 +622,10 @@ export default class Profile extends Component {
             ))}
           </div>
           <div
-            className={classNames("button saveButton", {
-              disabled: this.isEditingAnything(),
+            className={clsx("button saveButton", {
+              disabled: isEditingAnything(),
             })}
-            onClick={this.saveProfile}
+            onClick={saveProfile}
           >
             Save
           </div>
@@ -300,7 +663,7 @@ export default class Profile extends Component {
             {(this.state.goals[this.state.goalsKey] || []).map((el, ind) => (
               <div
                 key={ind}
-                className={classNames("goalEntry", {
+                className={clsx("goalEntry", {
                   passed: el.status === "passed",
                   failed: el.status === "failed",
                 })}
@@ -374,10 +737,10 @@ export default class Profile extends Component {
             ))}
           </div>
           <div
-            className={classNames("button saveButton", {
-              disabled: this.isEditingAnything(),
+            className={clsx("button saveButton", {
+              disabled: isEditingAnything(),
             })}
-            onClick={this.saveProfile}
+            onClick={saveProfile}
           >
             Save
           </div>
@@ -428,7 +791,7 @@ export default class Profile extends Component {
                   {data.map((el, ind) => (
                     <div
                       key={ind}
-                      className={classNames({
+                      className={clsx({
                         chartHoverKey: el.title === curKey,
                       })}
                     >
@@ -451,419 +814,6 @@ export default class Profile extends Component {
       </div>
     );
   }
-
-  isEditingAnything = () => {
-    let result = false;
-    this.state.subscriptions.forEach((sub) => {
-      if (sub.editing) {
-        result = true;
-        return;
-      }
-    });
-    Object.values(this.state.goals).forEach((goalsList) => {
-      goalsList.forEach((goal) => {
-        if (goal.editing) {
-          result = true;
-          return;
-        }
-      });
-    });
-    return result;
-  };
-
-  setPresetSpan = (span) => {
-    let today = new Date(Date.now()).toLocaleDateString();
-    let prev = CONSTANTS.SUBTRACT_PRESET(today, span);
-    this.setState({
-      chartStart: prev,
-      chartEnd: today,
-    });
-  };
-
-  setHoverKey = (key) => {
-    this.setState({
-      hoverKey: key,
-    });
-  };
-
-  setDefaultHoverKey = (key) => {
-    this.setState({
-      defaultHoverKey: this.state.defaultHoverKey === key ? "" : key,
-    });
-  };
-
-  getSpendingByCategory = () => {
-    let startDate = new Date(this.state.chartStart);
-    let endDate = new Date(this.state.chartEnd);
-    let total = 0;
-    let itemized = {};
-    let transactionList = {};
-    if (endDate < startDate) {
-      return { total, itemized, transactionList };
-    }
-    const addSpending = (tag, cost, location, date) => {
-      if (!cost || parseInt(cost) === 0) {
-        return;
-      }
-      cost = parseInt(cost);
-      total += cost;
-      if (tag !== "") {
-        if (!itemized.hasOwnProperty(tag)) {
-          itemized[tag] = 0;
-          transactionList[tag] = [];
-        }
-        itemized[tag] += cost;
-        transactionList[tag].push({
-          cost,
-          location,
-          date,
-        });
-      }
-    };
-    for (
-      let date = startDate;
-      date <= endDate;
-      date.setDate(date.getDate() + 1)
-    ) {
-      this.state.subscriptions.forEach((sub) => {
-        if (CONSTANTS.SUB_APPLIES(sub, date)) {
-          addSpending(
-            sub.tags.length === 0 ? "MISC" : sub.tags[0],
-            sub.cost,
-            sub.location,
-            date.toLocaleDateString()
-          );
-        }
-      });
-      let dateStr = date.toLocaleDateString();
-      let transactions = this.state.finance.hasOwnProperty(dateStr)
-        ? this.state.finance[dateStr]
-        : [];
-      transactions.forEach((transaction) => {
-        addSpending(
-          transaction.tags.length === 0 ? "MISC" : transaction.tags[0],
-          transaction.cost,
-          transaction.location,
-          date.toLocaleDateString()
-        );
-      });
-    }
-    return { total, itemized, transactionList };
-  };
-
-  subChanged = () => {
-    let currentSubs = this.state.subscriptions;
-    let prevSubs = this.props.userInfo.subscriptions;
-    if (currentSubs.length != prevSubs.length) {
-      return true;
-    }
-    let changed = false;
-    currentSubs.forEach((_, ind) => {
-      if (changed) {
-        return;
-      }
-      let cur = currentSubs[ind];
-      let prev = prevSubs[ind];
-      if (
-        cur.cost !== prev.cost ||
-        cur.description !== prev.description ||
-        cur.location !== prev.location ||
-        cur.start !== prev.start ||
-        cur.end !== prev.end ||
-        cur.frequency != prev.frequency
-      ) {
-        changed = true;
-      }
-      let curTags = cur.tags;
-      let prevTags = prev.tags;
-      if (curTags.length != prevTags.length) {
-        changed = true;
-      }
-      curTags.forEach((_, ind) => {
-        if (curTags[ind] != prevTags[ind]) {
-          changed = true;
-        }
-      });
-    });
-    return changed;
-  };
-
-  goalsChanged = () => {
-    let currentGoals = this.state.goals;
-    let prevGoals = this.props.userInfo.goals;
-    let changed = false;
-    let prevKeys = Object.keys(prevGoals);
-    let currentKeys = Object.keys(currentGoals);
-    if (
-      prevKeys.length !== currentKeys.length ||
-      !prevKeys.every((key) => currentKeys.includes(key)) ||
-      !currentKeys.every((key) => prevKeys.includes(key))
-    ) {
-      return true;
-    }
-    currentKeys.forEach((key) => {
-      if (changed) {
-        return;
-      }
-      let prevEntries = prevGoals[key] || [];
-      let currentEntries = currentGoals[key] || [];
-      if (prevEntries.length !== currentEntries.length) {
-        changed = true;
-        return;
-      }
-      currentEntries.forEach((_, ind) => {
-        let cur = currentEntries[ind];
-        let prev = prevEntries[ind];
-        if (
-          cur.name !== prev.name ||
-          cur.description !== prev.description ||
-          cur.status !== prev.status
-        ) {
-          changed = true;
-        }
-      });
-    });
-    return changed;
-  };
-
-  addGoal = () => {
-    let newGoals = this.state.goals;
-    let newGoal = Object.assign({}, CONSTANTS.EMPTY_GOAL);
-    newGoals[this.state.goalsKey] = (
-      newGoals[this.state.goalsKey] || []
-    ).concat(newGoal);
-    this.setState({
-      goals: newGoals,
-    });
-  };
-
-  deleteGoal = (ind) => {
-    let newGoals = this.state.goals;
-    newGoals[this.state.goalsKey].splice(ind, 1);
-    this.setState({
-      goals: newGoals,
-    });
-  };
-
-  cycleGoalStatus = (goal) => {
-    if (goal.status === "failed") {
-      goal.status = "in progress";
-    } else if (goal.status === "in progress") {
-      goal.status = "passed";
-    } else if (goal.status === "passed") {
-      goal.status = "failed";
-    }
-    this.setState({
-      goals: this.state.goals,
-    });
-  };
-
-  editGoal = (goal, fieldName, value) => {
-    goal[fieldName] = value;
-    this.setState({
-      goals: this.state.goals,
-    });
-  };
-
-  moveGoalsKey = (diff) => {
-    let [year, quarter] = this.state.goalsKey.split("-");
-    let rawValue = Number.parseInt(year) * 4 + Number.parseInt(quarter);
-    let newValue = rawValue + diff;
-    this.setState({
-      goalsKey: `${Math.floor(newValue / 4)}-${newValue % 4}`,
-    });
-  };
-
-  addSub = () => {
-    let newSubscriptions = this.state.subscriptions;
-    let newSub = Object.assign({}, CONSTANTS.EMPTY_SUBSCRIPTION);
-    newSub.tags = [];
-    newSubscriptions.push(newSub);
-    this.setState({
-      subscriptions: newSubscriptions,
-    });
-  };
-
-  deleteSub = (ind) => {
-    let newSubscriptions = this.state.subscriptions;
-    newSubscriptions.splice(ind, 1);
-    this.setState({
-      subscriptions: newSubscriptions,
-    });
-  };
-
-  editSub = (sub, fieldName, value) => {
-    sub[fieldName] = value;
-    this.setState({
-      subscriptions: this.state.subscriptions,
-    });
-  };
-
-  selectFrequency = (el, freq) => {
-    el.frequency = freq;
-    this.setState({
-      subscriptions: this.state.subscriptions,
-    });
-  };
-
-  selectDate = (sub, fieldName) => {
-    if (!sub.editing) {
-      return;
-    }
-    let emptyDate = !sub[fieldName] || sub[fieldName] === "";
-    this.setState({
-      setSub: sub,
-      setField: fieldName,
-      setDate: emptyDate
-        ? new Date(Date.now()).toLocaleDateString()
-        : sub[fieldName],
-      setShow: true,
-    });
-  };
-
-  selectChartDate = (fieldName) => {
-    let relevantDate =
-      fieldName === "start" ? this.state.chartStart : this.state.chartEnd;
-    this.setState({
-      chartDateField: fieldName,
-      setChartDate: relevantDate,
-      selectingChart: true,
-    });
-  };
-
-  changeDate = (date) => {
-    this.setState({
-      setDate: date,
-    });
-  };
-
-  changeChartDate = (date) => {
-    this.setState({
-      setChartDate: date,
-    });
-  };
-
-  commitDate = () => {
-    this.state.setSub[this.state.setField] = this.state.setDate;
-    this.setState({
-      setShow: false,
-      subscriptions: this.state.subscriptions,
-    });
-  };
-
-  commitChartDate = () => {
-    this.setState({
-      selectingChart: false,
-      [this.state.chartDateField === "start" ? "chartStart" : "chartEnd"]:
-        this.state.setChartDate,
-    });
-  };
-
-  handleGoalClick = (goal) => {
-    goal.show = !goal.show;
-    this.setState({
-      goals: this.state.goals,
-    });
-  };
-
-  handleSubClick = (sub) => {
-    sub.show = !sub.show;
-    this.setState({
-      subscriptions: this.state.subscriptions,
-    });
-  };
-
-  formatSubTime = (date) => {
-    if (!date || date === "") {
-      return "\u221E";
-    }
-    return date;
-  };
-
-  formatFrequency = (freq) => {
-    if (!freq || freq === "") {
-      return "(SET)";
-    }
-    return `(${freq})`;
-  };
-
-  startGoalEdit = (goal) => {
-    goal.editing = true;
-    goal.editName = goal.name;
-    goal.editDescription = goal.description;
-    this.setState({
-      goals: this.state.goals,
-    });
-  };
-
-  commitGoalEdit = (goal) => {
-    goal.editing = false;
-    goal.name = goal.editName;
-    goal.description = goal.editDescription;
-    this.setState({
-      goals: this.state.goals,
-    });
-  };
-
-  startSubEdit = (sub) => {
-    sub.editing = true;
-    sub.editCost = sub.cost;
-    sub.editLocation = sub.location;
-    sub.editDescription = sub.description;
-    this.setState({
-      subscriptions: this.state.subscriptions,
-    });
-  };
-
-  commitSubEdit = (sub) => {
-    sub.editing = false;
-    sub.cost = sub.editCost;
-    sub.location = sub.editLocation;
-    sub.description = sub.editDescription;
-    this.setState({
-      subscriptions: this.state.subscriptions,
-    });
-  };
-
-  saveProfile = () => {
-    if (this.isEditingAnything()) {
-      return;
-    }
-    let subscriptions = this.state.subscriptions;
-    subscriptions.forEach((s) => {
-      delete s.show;
-      delete s.editing;
-      delete s.editCost;
-      delete s.editLocation;
-      delete s.editDescription;
-    });
-    let goals = this.state.goals;
-    Object.values(goals).forEach((goalList) => {
-      goalList.forEach((g) => {
-        delete g.show;
-        delete g.editing;
-        delete g.editName;
-        delete g.editDescription;
-      });
-    });
-    let body = {
-      subscriptions,
-      goals,
-    };
-    fetch("/api/save_profile", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(body),
-    }).then((res) => {
-      if (res.status === 200) {
-        window.location.reload();
-      } else {
-        alert(
-          "There was an issue saving your entry. Please make sure you're logged in."
-        );
-      }
-    });
-  };
 }
+
+export default Profile;

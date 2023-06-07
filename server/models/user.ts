@@ -5,6 +5,7 @@ import {
   FinanceLog,
   Diary,
   Subscription,
+  GoalsList,
 } from "../../defaults";
 
 export interface IUser extends Document, UserModel {
@@ -15,7 +16,7 @@ export interface IUser extends Document, UserModel {
   finance: FinanceLog;
   tags: string[];
   subscriptions: Subscription[];
-  goals: any;
+  goals: GoalsList;
 }
 
 export class UserModel {
