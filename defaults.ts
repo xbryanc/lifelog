@@ -152,7 +152,7 @@ export const EMPTY_TRANSACTION: Transaction = Object.freeze({
   tags: [],
 });
 
-export const EMPTY_SUBSCRIPTION: Subscription = {
+export const EMPTY_SUBSCRIPTION: Subscription = Object.freeze({
   cost: 0,
   description: "",
   location: "",
@@ -160,7 +160,8 @@ export const EMPTY_SUBSCRIPTION: Subscription = {
   start: "",
   end: "",
   frequency: "",
-};
+});
+
 export const EMPTY_GOAL: Goal = Object.freeze({
   name: "",
   description: "",

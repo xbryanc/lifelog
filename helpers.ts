@@ -1,3 +1,9 @@
+export const sortByDate = (a: string, b: string) => {
+  let dateA = new Date(a);
+  let dateB = new Date(b);
+  return dateA < dateB ? -1 : 1;
+};
+
 export const toGoalsKey = (selectedDate: string) => {
   let curDate = new Date(selectedDate);
   const year = curDate.getFullYear();
