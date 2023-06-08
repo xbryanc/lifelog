@@ -1,3 +1,5 @@
+import { Span, Subscription, SubscriptionFrequency } from "./defaults";
+
 export const sortByDate = (a: string, b: string) => {
   let dateA = new Date(a);
   let dateB = new Date(b);
@@ -11,7 +13,7 @@ export const toGoalsKey = (selectedDate: string) => {
   return `${year}-${Math.floor(month / 3)}`;
 };
 
-export const subApplies = (sub, selectedDate: string) => {
+export const subApplies = (sub: Subscription, selectedDate: string) => {
   let curDate = new Date(selectedDate);
   if (sub.end !== "" && new Date(sub.end) < curDate) {
     return false;
@@ -20,13 +22,13 @@ export const subApplies = (sub, selectedDate: string) => {
     return false;
   }
   let startDate = new Date(sub.start);
-  if (sub.frequency === DAILY) {
+  if (sub.frequency === SubscriptionFrequency.DAILY) {
     return true;
-  } else if (sub.frequency === WEEKLY) {
+  } else if (sub.frequency === SubscriptionFrequency.WEEKLY) {
     return startDate.getDay() === curDate.getDay();
-  } else if (sub.frequency === MONTHLY) {
+  } else if (sub.frequency === SubscriptionFrequency.MONTHLY) {
     return startDate.getDate() === curDate.getDate();
-  } else if (sub.frequency === YEARLY) {
+  } else if (sub.frequency === SubscriptionFrequency.YEARLY) {
     return (
       startDate.getMonth() === curDate.getMonth() &&
       startDate.getDate() === curDate.getDate()
@@ -35,15 +37,15 @@ export const subApplies = (sub, selectedDate: string) => {
   return false;
 };
 
-export const subtractPreset = (date: string, span) => {
+export const subtractPreset = (date: string, span: Span) => {
   let curDate = new Date(date);
   let newDate = curDate;
-  if (span !== DAY) {
-    if (span === WEEK) {
+  if (span !== Span.DAY) {
+    if (span === Span.WEEK) {
       newDate.setDate(curDate.getDate() - 7);
-    } else if (span === MONTH) {
+    } else if (span === Span.MONTH) {
       newDate.setMonth(curDate.getMonth() - 1);
-    } else if (span === YEAR) {
+    } else if (span === Span.YEAR) {
       newDate.setFullYear(curDate.getFullYear() - 1);
     }
     newDate.setDate(newDate.getDate() + 1);
@@ -57,6 +59,20 @@ export const formatCost = (costInPennies: number) => {
   const rest = `${Math.floor(cents / 10)}${cents % 10}`;
   // https://stackoverflow.com/questions/2901102/how-to-print-a-number-with-commas-as-thousands-separators-in-javascript
   return `$${dollar.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")}.${rest}`;
+};
+
+export const formatFrequency = (freq: SubscriptionFrequency) => {
+  if (freq === SubscriptionFrequency.EMPTY) {
+    return "(SET)";
+  }
+  return `(${freq})`;
+};
+
+export const formatSubTime = (date: string) => {
+  if (!date || date === "") {
+    return "\u221E";
+  }
+  return date;
 };
 
 export const colorForKey = (key: string) => {

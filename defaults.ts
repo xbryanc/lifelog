@@ -94,7 +94,7 @@ export interface Log {
 export interface Subscription {
   start: string;
   end: string;
-  frequency: string;
+  frequency: SubscriptionFrequency;
   cost: number;
   description: string;
   location: string;
@@ -159,7 +159,7 @@ export const EMPTY_SUBSCRIPTION: Subscription = Object.freeze({
   tags: [],
   start: "",
   end: "",
-  frequency: "",
+  frequency: SubscriptionFrequency.EMPTY,
 });
 
 export const EMPTY_GOAL: Goal = Object.freeze({

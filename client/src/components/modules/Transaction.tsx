@@ -103,7 +103,7 @@ const Transaction: React.FC<TransactionProps> = ({
         </div>
         <div
           className={clsx("transactionCost", {
-            zero: !editing && (!cost || cost === 0),
+            zero: !editing && !cost,
           })}
           onClick={handleClick}
         >

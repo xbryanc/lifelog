@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import _ from 'lodash';
 const Calendar = require("react-calendar");
+import _ from 'lodash';
 import clsx from "clsx";
 import { PieChart } from "react-minimal-pie-chart";
 import "../../css/app.css";
@@ -8,6 +8,7 @@ import "../../css/profile.css";
 
 import { EMPTY_GOAL, Goal, GoalStatus, User } from "../../../../defaults";
 import { subApplies, subtractPreset, toGoalsKey } from "../../../../helpers";
+import Subscription from "../modules/Subscription";
 
 interface ProfileProps {
   userInfo: User;
@@ -16,7 +17,6 @@ interface ProfileProps {
 const Profile: React.FC<ProfileProps> = ({userInfo}) => {
   const [subscriptions, setSubscriptions] = useState(_.cloneDeep(userInfo.subscriptions));
   const [finance, setFinance] = useState(_.cloneDeep(userInfo.finance));
-  const [showSelect, setShowSelect] = useState(false);
   const [chartStart, setChartStart] = useState(new Date(Date.now()).toLocaleDateString());
   const [chartEnd, setChartEnd] = useState(new Date(Date.now()).toLocaleDateString());
   const [selectingChart, setSelectingChart] = useState(false);
@@ -24,6 +24,7 @@ const Profile: React.FC<ProfileProps> = ({userInfo}) => {
   const [defaultHoverKey, _setDefaultHoverKey] = useState("");
   const [goalsKey, setGoalsKey] = useState(toGoalsKey(new Date(Date.now()).toLocaleDateString()));
   const [goals, setGoals] = useState(_.cloneDeep(userInfo.goals));
+  const [editCounts, setEditCounts] = useState(0);
 
   useEffect(() => {
     document.title = "Profile";
@@ -262,28 +263,6 @@ const Profile: React.FC<ProfileProps> = ({userInfo}) => {
     });
   };
 
-  const selectFrequency = (el, freq) => {
-    el.frequency = freq;
-    this.setState({
-      subscriptions: this.state.subscriptions,
-    });
-  };
-
-  const selectDate = (sub, fieldName) => {
-    if (!sub.editing) {
-      return;
-    }
-    let emptyDate = !sub[fieldName] || sub[fieldName] === "";
-    this.setState({
-      setSub: sub,
-      setField: fieldName,
-      setDate: emptyDate
-        ? new Date(Date.now()).toLocaleDateString()
-        : sub[fieldName],
-      showSelect: true,
-    });
-  };
-
   const selectChartDate = (fieldName) => {
     let relevantDate =
       fieldName === "start" ? this.state.chartStart : this.state.chartEnd;
@@ -294,23 +273,9 @@ const Profile: React.FC<ProfileProps> = ({userInfo}) => {
     });
   };
 
-  const changeDate = (date) => {
-    this.setState({
-      setDate: date,
-    });
-  };
-
   const changeChartDate = (date) => {
     this.setState({
       setChartDate: date,
-    });
-  };
-
-  const commitDate = () => {
-    this.state.setSub[this.state.setField] = this.state.setDate;
-    this.setState({
-      showSelect: false,
-      subscriptions: this.state.subscriptions,
     });
   };
 
@@ -336,20 +301,6 @@ const Profile: React.FC<ProfileProps> = ({userInfo}) => {
     });
   };
 
-  const formatSubTime = (date) => {
-    if (!date || date === "") {
-      return "\u221E";
-    }
-    return date;
-  };
-
-  const formatFrequency = (freq) => {
-    if (!freq || freq === "") {
-      return "(SET)";
-    }
-    return `(${freq})`;
-  };
-
   const startGoalEdit = (goal) => {
     goal.editing = true;
     goal.editName = goal.name;
@@ -365,26 +316,6 @@ const Profile: React.FC<ProfileProps> = ({userInfo}) => {
     goal.description = goal.editDescription;
     this.setState({
       goals: this.state.goals,
-    });
-  };
-
-  const startSubEdit = (sub) => {
-    sub.editing = true;
-    sub.editCost = sub.cost;
-    sub.editLocation = sub.location;
-    sub.editDescription = sub.description;
-    this.setState({
-      subscriptions: this.state.subscriptions,
-    });
-  };
-
-  const commitSubEdit = (sub) => {
-    sub.editing = false;
-    sub.cost = sub.editCost;
-    sub.location = sub.editLocation;
-    sub.description = sub.editDescription;
-    this.setState({
-      subscriptions: this.state.subscriptions,
     });
   };
 
@@ -428,7 +359,7 @@ const Profile: React.FC<ProfileProps> = ({userInfo}) => {
     });
     return (
       <div className="profileContainer">
-        {!this.state.selectingChart ? null : (
+        {!selectingChart ? null : (
           <div className="selectContainer" onClick={this.commitChartDate}>
             <div className="selectPopup" onClick={(e) => e.stopPropagation()}>
               Selecting {this.state.chartDateField} date as{" "}
@@ -440,22 +371,6 @@ const Profile: React.FC<ProfileProps> = ({userInfo}) => {
                 defaultValue={new Date(this.state.setChartDate)}
               />
               <div className="button saveButton" onClick={this.commitChartDate}>
-                Select Date
-              </div>
-            </div>
-          </div>
-        )}
-        {!this.state.showSelect ? null : (
-          <div className="selectContainer" onClick={this.commitDate}>
-            <div className="selectPopup" onClick={(e) => e.stopPropagation()}>
-              Selecting {this.state.setField} date as {this.state.setDate}
-              <Calendar
-                className="subCalendar"
-                onClickDay={(e) => this.changeDate(e.toLocaleDateString())}
-                calendarType="US"
-                defaultValue={new Date(this.state.setDate)}
-              />
-              <div className="button saveButton" onClick={this.commitDate}>
                 Select Date
               </div>
             </div>
@@ -474,151 +389,8 @@ const Profile: React.FC<ProfileProps> = ({userInfo}) => {
             </div>
           </div>
           <div className="subList">
-            {this.state.subscriptions.map((el, ind) => (
-              <div key={ind} className="subEntry">
-                <div className="subHeader">
-                  <div
-                    className="subLocation"
-                    onClick={() => this.handleSubClick(el)}
-                  >
-                    {el.editing ? (
-                      <input
-                        type="text"
-                        className="subEditEntry"
-                        name="subLocationEntry"
-                        id="subLocationEntry"
-                        value={el.editLocation}
-                        onChange={(e) =>
-                          this.editSub(el, "editLocation", e.target.value)
-                        }
-                        onClick={(e) => e.stopPropagation()}
-                      />
-                    ) : (
-                      el.location
-                    )}
-                  </div>
-                  <div
-                    className={clsx("subTimeFrame", {
-                      editing: el.editing,
-                    })}
-                    onClick={() => {
-                      if (!el.editing) this.handleSubClick(el);
-                    }}
-                  >
-                    <div
-                      className={clsx("subTimeStart", {
-                        editing: el.editing,
-                      })}
-                      onClick={() => this.selectDate(el, "start")}
-                    >
-                      {this.formatSubTime(el.start)}
-                    </div>
-                    <div className="subTimeDash">-</div>
-                    <div
-                      className={clsx("subTimeEnd", {
-                        editing: el.editing,
-                      })}
-                      onClick={() => this.selectDate(el, "end")}
-                    >
-                      {this.formatSubTime(el.end)}
-                    </div>
-                    <div className="subTimeFrequency">
-                      {el.editing ? (
-                        <select
-                          className="subFrequencyEntry"
-                          name="subFrequency"
-                          id="subFrequency"
-                          value={el.frequency}
-                          onChange={(e) =>
-                            this.selectFrequency(el, e.target.value)
-                          }
-                        >
-                          {CONSTANTS.SUBSCRIPTION_FREQUENCIES.map(
-                            (freq, ind) => (
-                              <option key={ind} value={freq}>
-                                {freq}
-                              </option>
-                            )
-                          )}
-                        </select>
-                      ) : (
-                        this.formatFrequency(el.frequency)
-                      )}
-                    </div>
-                  </div>
-                  <div
-                    className="subTagsList"
-                    onClick={() => this.handleSubClick(el)}
-                  >
-                    {el.tags.map((tag, tagInd) => (
-                      <div key={tagInd} className="subTag">
-                        {tag}
-                      </div>
-                    ))}
-                  </div>
-                  <div
-                    className={clsx("subCost", {
-                      zero:
-                        !el.editing && (!el.cost || parseInt(el.cost) === 0),
-                    })}
-                    onClick={() => this.handleSubClick(el)}
-                  >
-                    {el.editing ? (
-                      <input
-                        type="number"
-                        className="subEditEntry"
-                        name="subCostEntry"
-                        id="subCostEntry"
-                        value={el.editCost}
-                        onChange={(e) =>
-                          this.editSub(el, "editCost", e.target.value)
-                        }
-                        onClick={(e) => e.stopPropagation()}
-                      />
-                    ) : (
-                      CONSTANTS.FORMAT_COST(el.cost)
-                    )}
-                  </div>
-                  <div className="subIcons">
-                    <img
-                      className="smallButton buttonPicture"
-                      onClick={
-                        el.editing
-                          ? () => this.commitSubEdit(el)
-                          : () => this.startSubEdit(el)
-                      }
-                      src={
-                        el.editing ? "/media/check.svg" : "/media/pencil.svg"
-                      }
-                    />
-                    <div
-                      className="smallButton text red"
-                      onClick={() => this.deleteSub(ind)}
-                    >
-                      x
-                    </div>
-                  </div>
-                </div>
-                {el.show ? (
-                  <div className="subBody">
-                    {el.editing ? (
-                      <textarea
-                        type="text"
-                        className="subEditDescription"
-                        name="subDescriptionEntry"
-                        id="subDescriptionEntry"
-                        value={el.editDescription}
-                        onChange={(e) =>
-                          this.editSub(el, "editDescription", e.target.value)
-                        }
-                        onClick={(e) => e.stopPropagation()}
-                      />
-                    ) : (
-                      el.description
-                    )}
-                  </div>
-                ) : null}
-              </div>
+            {subscriptions.map((el, ind) => (
+              <Subscription key={ind} subscription={el} />
             ))}
           </div>
           <div

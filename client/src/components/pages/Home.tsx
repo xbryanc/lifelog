@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import _, { sortBy } from "lodash";
+import _ from "lodash";
 const Calendar = require("react-calendar");
 import clsx from "clsx";
 
@@ -11,10 +11,11 @@ import {
   Log,
   Transaction,
 } from "../../../../defaults";
-import { subApplies, formatCost, sortByDate } from "../../../../helpers";
+import { subApplies, sortByDate } from "../../../../helpers";
 import "../../css/app.css";
 import "../../css/home.css";
 import TransactionComponent from "../modules/Transaction";
+import Subscription from "../modules/Subscription";
 
 interface HomeProps {
   userInfo: User;
@@ -26,9 +27,6 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
   );
   const [diary, setDiary] = useState(_.cloneDeep(userInfo.diary));
   const [finance, setFinance] = useState(_.cloneDeep(userInfo.finance));
-  const [subscriptions, setSubscriptions] = useState(
-    _.cloneDeep(userInfo.subscriptions)
-  );
   const [tags, setTags] = useState(_.cloneDeep(userInfo.tags));
   const [tagEdits, setTagEdits] = useState<Record<string, string>>({});
   const [editCounts, setEditCounts] = useState(0);
@@ -61,8 +59,11 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
     };
   }, []);
 
+  useEffect(() => {
+    handleChange();
+  }, [diary, finance, selectedDate]);
+
   const handleChange = () => {
-    // TODO: add to all change functions
     const newChangeSet = _.cloneDeep(changeSet);
     const isDirty = diaryChanged(selectedDate) || financeChanged(selectedDate);
     let ind = newChangeSet.indexOf(selectedDate);
@@ -142,13 +143,6 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
     const newFinance = _.cloneDeep(finance);
     finance[selectedDate][ind] = newTransaction;
     setFinance(newFinance);
-  };
-
-  const handleSubClick = (sub) => {
-    sub.show = !sub.show;
-    this.setState({
-      subscriptions: this.state.subscriptions,
-    });
   };
 
   const tagValid = (tag: string) => {
@@ -313,7 +307,7 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
       diary,
       tags,
       finance,
-      subscriptions,
+      subscriptions: userInfo.subscriptions,
     };
     fetch("/api/save_info", {
       method: "POST",
@@ -559,41 +553,14 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
               </div>
             </div>
             <div className="finTransactionList">
-              {subscriptions.map((sub, ind) =>
+              {userInfo.subscriptions.map((sub, ind) =>
                 !subApplies(sub, selectedDate) ? null : (
-                  <div key={ind} className="finTransaction">
-                    <div className="transactionHeader sub">
-                      <div
-                        className="transactionLocation"
-                        onClick={() => handleSubClick(sub)}
-                      >
-                        {sub.location}
-                      </div>
-                      <div
-                        className="transactionTagsList"
-                        onClick={() => handleSubClick(sub)}
-                      >
-                        {sub.tags.map((tag, tagInd) => (
-                          <div key={`tag${tagInd}`} className="transactionTag">
-                            {tag}
-                          </div>
-                        ))}
-                      </div>
-                      <div
-                        className={clsx("transactionCost", {
-                          zero: !sub.cost || sub.cost === 0,
-                        })}
-                        onClick={() => handleSubClick(sub)}
-                      >
-                        {formatCost(sub.cost)}
-                      </div>
-                    </div>
-                    {sub.show ? (
-                      <div className="transactionBody sub">
-                        {sub.description}
-                      </div>
-                    ) : null}
-                  </div>
+                  <Subscription
+                    key={ind}
+                    subscription={sub}
+                    incrementEdits={() => setEditCounts(editCounts + 1)}
+                    decrementEdits={() => setEditCounts(editCounts - 1)}
+                  />
                 )
               )}
               {finance[selectedDate].map((el, ind) => (
