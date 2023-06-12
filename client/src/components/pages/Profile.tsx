@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-const Calendar = require("react-calendar");
+// @ts-ignore
+import Calendar from "react-calendar";
 import _ from "lodash";
 import clsx from "clsx";
 import { PieChart } from "react-minimal-pie-chart";
@@ -46,7 +47,6 @@ const Profile: React.FC<ProfileProps> = ({ userInfo }) => {
   const [subscriptions, setSubscriptions] = useState(
     _.cloneDeep(userInfo.subscriptions)
   );
-  const [finance, setFinance] = useState(_.cloneDeep(userInfo.finance));
   const [chartStart, setChartStart] = useState(
     new Date(Date.now()).toLocaleDateString()
   );
@@ -132,7 +132,7 @@ const Profile: React.FC<ProfileProps> = ({ userInfo }) => {
         }
       });
       const dateStr = date.toLocaleDateString();
-      const transactions = finance[dateStr] ?? [];
+      const transactions = userInfo.finance[dateStr] ?? [];
       transactions.forEach((transaction) => {
         addSpending(
           transaction.tags.length === 0 ? MISC_TAG : transaction.tags[0],
@@ -221,7 +221,7 @@ const Profile: React.FC<ProfileProps> = ({ userInfo }) => {
   };
 
   const saveProfile = () => {
-    if (!subsChanged && !goalsChanged) {
+    if (subsChanged || goalsChanged) {
       return;
     }
     const body = {
@@ -247,16 +247,16 @@ const Profile: React.FC<ProfileProps> = ({ userInfo }) => {
 
   const curKey = hoverKey || defaultHoverKey;
   const { total, itemized, transactionList } = getSpendingByCategory();
-  const data: PieEntry[] = [];
+  const data: PieEntry[] = Object.entries(itemized).map(([key, value]) => ({
+    title: key,
+    value,
+    color: colorForKey(key),
+  }));
   const curTransactions = transactionList[curKey] || [];
-  const [goalsYear, goalsQuarter] = goalsKey.split("-");
-  Object.keys(itemized).forEach((key) => {
-    data.push({
-      title: key,
-      value: itemized[key],
-      color: colorForKey(key),
-    });
-  });
+  const [goalsYear, goalsQuarter] = goalsKey
+    .split("-")
+    .map((s) => Number.parseInt(s));
+
   return (
     <div className="profileContainer">
       {!selectingChart ? null : (
@@ -301,7 +301,7 @@ const Profile: React.FC<ProfileProps> = ({ userInfo }) => {
         </div>
         <div
           className={clsx("button saveButton", {
-            disabled: !subsChanged && !goalsChanged,
+            disabled: subsChanged || goalsChanged,
           })}
           onClick={saveProfile}
         >
@@ -344,7 +344,7 @@ const Profile: React.FC<ProfileProps> = ({ userInfo }) => {
         </div>
         <div
           className={clsx("button saveButton", {
-            disabled: !subsChanged && !goalsChanged,
+            disabled: subsChanged || goalsChanged,
           })}
           onClick={saveProfile}
         >

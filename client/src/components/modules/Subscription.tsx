@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-const Calendar = require("react-calendar");
+// @ts-ignore
+import Calendar from "react-calendar";
 import _ from "lodash";
 import clsx from "clsx";
 
@@ -36,6 +37,7 @@ const Subscription: React.FC<SubscriptionProps> = ({
   const [cost, setCost] = useState(subscription.cost);
   const [location, setLocation] = useState(subscription.location);
   const [description, setDescription] = useState(subscription.description);
+  // TODO: set tags
   const [tags, setTags] = useState(subscription.tags);
   const [editing, setEditing] = useState(false);
   const [editCost, setEditCost] = useState(cost);

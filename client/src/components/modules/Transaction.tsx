@@ -40,7 +40,7 @@ const Transaction: React.FC<TransactionProps> = ({
 
   const handleClick = () => {
     if (selectedTag === "") {
-      setShow(!setShow);
+      setShow(!show);
       return;
     }
     const newTags = _.cloneDeep(tags);

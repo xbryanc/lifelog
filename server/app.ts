@@ -10,6 +10,7 @@ const dotenv = require("dotenv");
 dotenv.config();
 
 // local dependencies
+const _db = require("./db");
 import passport from "./passport";
 import api from "./routes/api";
 

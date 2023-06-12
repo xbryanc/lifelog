@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import _ from "lodash";
-const Calendar = require("react-calendar");
+// @ts-ignore
+import Calendar from "react-calendar";
 import clsx from "clsx";
 
 import {
@@ -8,7 +9,6 @@ import {
   STAR_MAX,
   KONAMI_CODE,
   User,
-  Log,
   Transaction,
 } from "../../../../defaults";
 import { subApplies, sortByDate } from "../../../../helpers";
@@ -92,14 +92,14 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
   const maybeSearch = (e: any) => {
     const contains = (stringA: string, stringB: string) => {
       const strippedA = (stringA || "")
-        .replaceAll(" ", "")
-        .replaceAll("\t", "")
-        .replaceAll("\n", "")
+        .replace(/ /g, "")
+        .replace(/\t/g, "")
+        .replace(/\n/g, "")
         .toLowerCase();
       const strippedB = stringB
-        .replaceAll(" ", "")
-        .replaceAll("\t", "")
-        .replaceAll("\n", "")
+        .replace(/ /g, "")
+        .replace(/\t/g, "")
+        .replace(/\n/g, "")
         .toLowerCase();
       return strippedA.indexOf(strippedB) !== -1;
     };
@@ -144,7 +144,7 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
 
   const editTransaction = (ind: number, newTransaction: Transaction) => {
     const newFinance = _.cloneDeep(finance);
-    finance[selectedDate][ind] = newTransaction;
+    newFinance[selectedDate][ind] = newTransaction;
     setFinance(newFinance);
   };
 
@@ -171,7 +171,7 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
   const changeTag = (tagName: string, toRemove: boolean) => {
     const newTagEdits = tagEdits;
     if (toRemove) {
-      const intended = confirm(`Delete tag "${tagName}"?`);
+      const intended = window.confirm(`Delete tag "${tagName}"?`);
       if (!intended) {
         return;
       }
@@ -251,7 +251,7 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
   const createStars = () => {
     const unfilled = "/media/star_light_unfilled.svg";
     const filled = "/media/star_light_filled.svg";
-    return [...Array(STAR_MAX).keys()].map((ind) => (
+    return _.range(0, STAR_MAX).map((ind) => (
       <img
         key={ind}
         className="diaryStars"
@@ -360,7 +360,7 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
 
   return (
     <div className="homeContainer">
-      {!konami ? null : (
+      {konami && (
         <div className="homePopupContainer" onClick={toggleKonami}>
           <div className="homePopup" onClick={(e) => e.stopPropagation()}>
             Enter bulk entries:
@@ -580,7 +580,7 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
                   />
                 )
               )}
-              {finance[selectedDate].map((el, ind) => (
+              {(finance[selectedDate] ?? []).map((el, ind) => (
                 <TransactionComponent
                   key={ind}
                   transaction={el}
