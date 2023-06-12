@@ -27,6 +27,9 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
   );
   const [diary, setDiary] = useState(_.cloneDeep(userInfo.diary));
   const [finance, setFinance] = useState(_.cloneDeep(userInfo.finance));
+  const [subscriptions, setSubscriptions] = useState(
+    _.cloneDeep(userInfo.subscriptions)
+  );
   const [tags, setTags] = useState(_.cloneDeep(userInfo.tags));
   const [tagEdits, setTagEdits] = useState<Record<string, string>>({});
   const [editCounts, setEditCounts] = useState(0);
@@ -192,7 +195,7 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
     const newFinance = _.cloneDeep(finance);
     Object.keys(newFinance).forEach((key) => {
       newFinance[key].forEach((el) => {
-        let tagIndex = el.tags.indexOf(tagName);
+        const tagIndex = el.tags.indexOf(tagName);
         if (tagIndex > -1) {
           if (toRemove) {
             el.tags.splice(tagIndex, 1);
@@ -231,6 +234,18 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
     const newFinance = _.cloneDeep(finance);
     newFinance[selectedDate].splice(ind, 1);
     setFinance(newFinance);
+  };
+
+  const deleteSub = (ind: number) => {
+    const newSubscriptions = _.cloneDeep(subscriptions);
+    newSubscriptions.splice(ind, 1);
+    setSubscriptions(newSubscriptions);
+  };
+
+  const editSub = (ind: number, newSub: Subscription) => {
+    const newSubscriptions = _.cloneDeep(subscriptions);
+    newSubscriptions[ind] = newSub;
+    setSubscriptions(newSubscriptions);
   };
 
   const createStars = () => {
@@ -281,14 +296,14 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
   };
 
   const saveBulk = () => {
-    let newDiary = _.cloneDeep(diary);
-    let dailyEntries = bulkPaste.split("\n\n");
+    const newDiary = _.cloneDeep(diary);
+    const dailyEntries = bulkPaste.split("\n\n");
     dailyEntries.forEach((dailyLog) => {
-      let body = dailyLog.split("\n");
-      let header = body.splice(0, 1)[0];
-      let tokens = header.split(" ");
-      let day = tokens[0];
-      let rating = parseInt(tokens[1].substring(1));
+      const body = dailyLog.split("\n");
+      const header = body.splice(0, 1)[0];
+      const tokens = header.split(" ");
+      const day = tokens[0];
+      const rating = parseInt(tokens[1].substring(1));
       newDiary[day] = {
         description: body.join("\n"),
         rating,
@@ -303,11 +318,11 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
     if (editCounts) {
       return;
     }
-    let body = {
+    const body = {
       diary,
       tags,
       finance,
-      subscriptions: userInfo.subscriptions,
+      subscriptions,
     };
     fetch("/api/save_info", {
       method: "POST",
@@ -366,14 +381,14 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
         onClickDay={(e: any) => calendarChange(e.toLocaleDateString())}
         calendarType="US"
         tileClassName={(properties: any) => {
-          let dateKey = properties.date.toLocaleDateString();
+          const dateKey = properties.date.toLocaleDateString();
           if (properties.view === "month" && _.hasIn(diary, dateKey)) {
             return `rating${diary[dateKey].rating}`;
           }
           return "calendarCell";
         }}
         tileContent={(properties: any) => {
-          let dateKey = properties.date.toLocaleDateString();
+          const dateKey = properties.date.toLocaleDateString();
           return incompleteDates.includes(dateKey) ? (
             <div
               className={clsx("calendarIncomplete", {
@@ -471,7 +486,7 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
             </div>
             <div className="finTagsList">
               {tags.map((el, ind) => {
-                let editing = _.hasIn(tagEdits, el);
+                const editing = _.hasIn(tagEdits, el);
                 return (
                   <div key={ind} className="finTag">
                     <div
@@ -553,11 +568,13 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
               </div>
             </div>
             <div className="finTransactionList">
-              {userInfo.subscriptions.map((sub, ind) =>
+              {subscriptions.map((sub, ind) =>
                 !subApplies(sub, selectedDate) ? null : (
                   <Subscription
                     key={ind}
                     subscription={sub}
+                    editSubscription={(s: Subscription) => editSub(ind, s)}
+                    deleteSubscription={() => deleteSub(ind)}
                     incrementEdits={() => setEditCounts(editCounts + 1)}
                     decrementEdits={() => setEditCounts(editCounts - 1)}
                   />

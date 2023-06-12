@@ -145,6 +145,8 @@ export const KONAMI_CODE = Object.freeze([
   "a",
 ]);
 
+export const MISC_TAG = "MISC";
+
 export const EMPTY_TRANSACTION: Transaction = Object.freeze({
   cost: 0,
   description: "",

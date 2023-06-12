@@ -80,7 +80,7 @@ app.use(function (err: any, req: Request, res: Response) {
 // port config
 const port = process.env.PORT || 3000; // config variable
 
-let server = new Server(app);
+const server = new Server(app);
 
 server.listen(port, function () {
   console.log("Server running on port: " + port);

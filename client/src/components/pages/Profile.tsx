@@ -1,81 +1,107 @@
 import React, { useState, useEffect } from "react";
 const Calendar = require("react-calendar");
-import _ from 'lodash';
+import _ from "lodash";
 import clsx from "clsx";
 import { PieChart } from "react-minimal-pie-chart";
 import "../../css/app.css";
 import "../../css/profile.css";
 
-import { EMPTY_GOAL, Goal, GoalStatus, User } from "../../../../defaults";
-import { subApplies, subtractPreset, toGoalsKey } from "../../../../helpers";
-import Subscription from "../modules/Subscription";
+import {
+  EMPTY_GOAL,
+  EMPTY_SUBSCRIPTION,
+  Goal,
+  GoalStatus,
+  MISC_TAG,
+  Span,
+  Subscription,
+  User,
+} from "../../../../defaults";
+import {
+  colorForKey,
+  formatCost,
+  subApplies,
+  subtractPreset,
+  toGoalsKey,
+} from "../../../../helpers";
+import SubscriptionComponent from "../modules/Subscription";
+import GoalComponent from "../modules/Goal";
 
 interface ProfileProps {
   userInfo: User;
 }
 
-const Profile: React.FC<ProfileProps> = ({userInfo}) => {
-  const [subscriptions, setSubscriptions] = useState(_.cloneDeep(userInfo.subscriptions));
+interface TransactionListItem {
+  cost: number;
+  location: string;
+  date: string;
+}
+
+interface PieEntry {
+  title: string;
+  value: number;
+  color: string;
+}
+
+const Profile: React.FC<ProfileProps> = ({ userInfo }) => {
+  const [subscriptions, setSubscriptions] = useState(
+    _.cloneDeep(userInfo.subscriptions)
+  );
   const [finance, setFinance] = useState(_.cloneDeep(userInfo.finance));
-  const [chartStart, setChartStart] = useState(new Date(Date.now()).toLocaleDateString());
-  const [chartEnd, setChartEnd] = useState(new Date(Date.now()).toLocaleDateString());
+  const [chartStart, setChartStart] = useState(
+    new Date(Date.now()).toLocaleDateString()
+  );
+  const [chartEnd, setChartEnd] = useState(
+    new Date(Date.now()).toLocaleDateString()
+  );
+  const [chartDateField, setChartDateField] = useState<"start" | "end">(
+    "start"
+  );
+  const [tempChartDate, setTempChartDate] = useState(
+    new Date(Date.now()).toLocaleDateString()
+  );
   const [selectingChart, setSelectingChart] = useState(false);
   const [hoverKey, setHoverKey] = useState("");
   const [defaultHoverKey, _setDefaultHoverKey] = useState("");
-  const [goalsKey, setGoalsKey] = useState(toGoalsKey(new Date(Date.now()).toLocaleDateString()));
+  const [goalsKey, setGoalsKey] = useState(
+    toGoalsKey(new Date(Date.now()).toLocaleDateString())
+  );
   const [goals, setGoals] = useState(_.cloneDeep(userInfo.goals));
-  const [editCounts, setEditCounts] = useState(0);
+  const [subsChanged, setSubsChanged] = useState(0);
+  const [goalsChanged, setGoalsChanged] = useState(0);
 
   useEffect(() => {
     document.title = "Profile";
-  }, [])
+  }, []);
 
-  const isEditingAnything = () => {
-    let result = false;
-    subscriptions.forEach((sub) => {
-      if (sub.editing) {
-        result = true;
-        return;
-      }
-    });
-    Object.values(goals).forEach((goalsList) => {
-      goalsList.forEach((goal) => {
-        if (goal.editing) {
-          result = true;
-          return;
-        }
-      });
-    });
-    return result;
-  };
-
-  const setPresetSpan = (span) => {
-    let today = new Date(Date.now()).toLocaleDateString();
-    let prev = subtractPreset(today, span);
-    this.setState({
-      chartStart: prev,
-      chartEnd: today,
-    });
+  const setPresetSpan = (span: Span) => {
+    const today = new Date(Date.now()).toLocaleDateString();
+    const prev = subtractPreset(today, span);
+    setChartStart(prev);
+    setChartEnd(today);
   };
 
   const setDefaultHoverKey = (key: string) => {
-      setDefaultHoverKey(defaultHoverKey === key ? "" : key)
+    _setDefaultHoverKey(defaultHoverKey === key ? "" : key);
   };
 
   const getSpendingByCategory = () => {
-    let startDate = new Date(this.state.chartStart);
-    let endDate = new Date(this.state.chartEnd);
+    const startDate = new Date(chartStart);
+    const endDate = new Date(chartEnd);
     let total = 0;
-    let itemized = {};
-    let transactionList = {};
+    const itemized: Record<string, number> = {};
+    const transactionList: Record<string, TransactionListItem[]> = {};
     if (endDate < startDate) {
       return { total, itemized, transactionList };
     }
-    const addSpending = (tag, cost, location, date) => {
-      if (!cost || parseInt(cost) === 0) {
+    const addSpending = (
+      tag: string,
+      cost: number,
+      location: string,
+      date: string
+    ) => {
+      if (!cost) {
         return;
       }
-      cost = parseInt(cost);
       total += cost;
       if (tag !== "") {
         if (!itemized.hasOwnProperty(tag)) {
@@ -95,23 +121,21 @@ const Profile: React.FC<ProfileProps> = ({userInfo}) => {
       date <= endDate;
       date.setDate(date.getDate() + 1)
     ) {
-      this.state.subscriptions.forEach((sub) => {
+      subscriptions.forEach((sub) => {
         if (subApplies(sub, date)) {
           addSpending(
-            sub.tags.length === 0 ? "MISC" : sub.tags[0],
+            sub.tags.length === 0 ? MISC_TAG : sub.tags[0],
             sub.cost,
             sub.location,
             date.toLocaleDateString()
           );
         }
       });
-      let dateStr = date.toLocaleDateString();
-      let transactions = this.state.finance.hasOwnProperty(dateStr)
-        ? this.state.finance[dateStr]
-        : [];
+      const dateStr = date.toLocaleDateString();
+      const transactions = finance[dateStr] ?? [];
       transactions.forEach((transaction) => {
         addSpending(
-          transaction.tags.length === 0 ? "MISC" : transaction.tags[0],
+          transaction.tags.length === 0 ? MISC_TAG : transaction.tags[0],
           transaction.cost,
           transaction.location,
           date.toLocaleDateString()
@@ -121,97 +145,22 @@ const Profile: React.FC<ProfileProps> = ({userInfo}) => {
     return { total, itemized, transactionList };
   };
 
-  const subChanged = () => {
-    let currentSubs = this.state.subscriptions;
-    let prevSubs = this.props.userInfo.subscriptions;
-    if (currentSubs.length != prevSubs.length) {
-      return true;
-    }
-    let changed = false;
-    currentSubs.forEach((_, ind) => {
-      if (changed) {
-        return;
-      }
-      let cur = currentSubs[ind];
-      let prev = prevSubs[ind];
-      if (
-        cur.cost !== prev.cost ||
-        cur.description !== prev.description ||
-        cur.location !== prev.location ||
-        cur.start !== prev.start ||
-        cur.end !== prev.end ||
-        cur.frequency != prev.frequency
-      ) {
-        changed = true;
-      }
-      let curTags = cur.tags;
-      let prevTags = prev.tags;
-      if (curTags.length != prevTags.length) {
-        changed = true;
-      }
-      curTags.forEach((_, ind) => {
-        if (curTags[ind] != prevTags[ind]) {
-          changed = true;
-        }
-      });
-    });
-    return changed;
-  };
-
-  const goalsChanged = () => {
-    let currentGoals = this.state.goals;
-    let prevGoals = this.props.userInfo.goals;
-    let changed = false;
-    let prevKeys = Object.keys(prevGoals);
-    let currentKeys = Object.keys(currentGoals);
-    if (
-      prevKeys.length !== currentKeys.length ||
-      !prevKeys.every((key) => currentKeys.includes(key)) ||
-      !currentKeys.every((key) => prevKeys.includes(key))
-    ) {
-      return true;
-    }
-    currentKeys.forEach((key) => {
-      if (changed) {
-        return;
-      }
-      let prevEntries = prevGoals[key] || [];
-      let currentEntries = currentGoals[key] || [];
-      if (prevEntries.length !== currentEntries.length) {
-        changed = true;
-        return;
-      }
-      currentEntries.forEach((_, ind) => {
-        let cur = currentEntries[ind];
-        let prev = prevEntries[ind];
-        if (
-          cur.name !== prev.name ||
-          cur.description !== prev.description ||
-          cur.status !== prev.status
-        ) {
-          changed = true;
-        }
-      });
-    });
-    return changed;
-  };
-
   const addGoal = () => {
-    let newGoals = _.cloneDeep(goals);
-    let newGoal = _.cloneDeep(EMPTY_GOAL);
-    newGoals[goalsKey] = (
-      newGoals[goalsKey] || []
-    ).concat(newGoal);
+    const newGoals = _.cloneDeep(goals);
+    const newGoal = _.cloneDeep(EMPTY_GOAL);
+    newGoals[goalsKey] = (newGoals[goalsKey] || []).concat(newGoal);
     setGoals(newGoals);
   };
 
-  const deleteGoal = (ind) => {
-    let newGoals = _.cloneDeep(goals);
+  const deleteGoal = (ind: number) => {
+    const newGoals = _.cloneDeep(goals);
     newGoals[goalsKey].splice(ind, 1);
     setGoals(newGoals);
   };
 
-  const cycleGoalStatus = (goal: Goal) => {
+  const cycleGoalStatus = (ind: number) => {
+    const newGoals = _.cloneDeep(goals);
+    const goal = newGoals[goalsKey][ind];
     if (goal.status === GoalStatus.FAILED) {
       goal.status = GoalStatus.IN_PROGRESS;
     } else if (goal.status === GoalStatus.IN_PROGRESS) {
@@ -222,108 +171,60 @@ const Profile: React.FC<ProfileProps> = ({userInfo}) => {
     setGoals(goals);
   };
 
-  const editGoal = (goal, fieldName, value) => {
-    goal[fieldName] = value;
-    this.setState({
-      goals: this.state.goals,
-    });
+  const editGoal = (ind: number, newGoal: Goal) => {
+    const newGoals = _.cloneDeep(goals);
+    newGoals[goalsKey][ind] = newGoal;
+    setGoals(newGoals);
   };
 
-  const moveGoalsKey = (diff) => {
-    let [year, quarter] = this.state.goalsKey.split("-");
-    let rawValue = Number.parseInt(year) * 4 + Number.parseInt(quarter);
-    let newValue = rawValue + diff;
-    this.setState({
-      goalsKey: `${Math.floor(newValue / 4)}-${newValue % 4}`,
-    });
+  const moveGoalsKey = (diff: number) => {
+    const [year, quarter] = goalsKey.split("-");
+    const rawValue = Number.parseInt(year) * 4 + Number.parseInt(quarter);
+    const newValue = rawValue + diff;
+    setGoalsKey(`${Math.floor(newValue / 4)}-${newValue % 4}`);
   };
 
   const addSub = () => {
-    let newSubscriptions = this.state.subscriptions;
-    let newSub = Object.assign({}, CONSTANTS.EMPTY_SUBSCRIPTION);
+    const newSubscriptions = _.cloneDeep(subscriptions);
+    const newSub = _.cloneDeep(EMPTY_SUBSCRIPTION);
     newSub.tags = [];
     newSubscriptions.push(newSub);
-    this.setState({
-      subscriptions: newSubscriptions,
-    });
+    setSubscriptions(newSubscriptions);
   };
 
-  const deleteSub = (ind) => {
-    let newSubscriptions = this.state.subscriptions;
+  const deleteSub = (ind: number) => {
+    const newSubscriptions = _.cloneDeep(subscriptions);
     newSubscriptions.splice(ind, 1);
-    this.setState({
-      subscriptions: newSubscriptions,
-    });
+    setSubscriptions(newSubscriptions);
   };
 
-  const editSub = (sub, fieldName, value) => {
-    sub[fieldName] = value;
-    this.setState({
-      subscriptions: this.state.subscriptions,
-    });
+  const editSub = (ind: number, newSub: Subscription) => {
+    const newSubscriptions = _.cloneDeep(subscriptions);
+    newSubscriptions[ind] = newSub;
+    setSubscriptions(newSubscriptions);
   };
 
-  const selectChartDate = (fieldName) => {
-    let relevantDate =
-      fieldName === "start" ? this.state.chartStart : this.state.chartEnd;
-    this.setState({
-      chartDateField: fieldName,
-      setChartDate: relevantDate,
-      selectingChart: true,
-    });
-  };
-
-  const changeChartDate = (date) => {
-    this.setState({
-      setChartDate: date,
-    });
+  const selectChartDate = (fieldName: "start" | "end") => {
+    const relevantDate = fieldName === "start" ? chartStart : chartEnd;
+    setChartDateField(fieldName);
+    setTempChartDate(relevantDate);
+    setSelectingChart(true);
   };
 
   const commitChartDate = () => {
-    this.setState({
-      selectingChart: false,
-      [this.state.chartDateField === "start" ? "chartStart" : "chartEnd"]:
-        this.state.setChartDate,
-    });
-  };
-
-  const handleGoalClick = (goal) => {
-    goal.show = !goal.show;
-    this.setState({
-      goals: this.state.goals,
-    });
-  };
-
-  const handleSubClick = (sub) => {
-    sub.show = !sub.show;
-    this.setState({
-      subscriptions: this.state.subscriptions,
-    });
-  };
-
-  const startGoalEdit = (goal) => {
-    goal.editing = true;
-    goal.editName = goal.name;
-    goal.editDescription = goal.description;
-    this.setState({
-      goals: this.state.goals,
-    });
-  };
-
-  const commitGoalEdit = (goal) => {
-    goal.editing = false;
-    goal.name = goal.editName;
-    goal.description = goal.editDescription;
-    this.setState({
-      goals: this.state.goals,
-    });
+    setSelectingChart(false);
+    if (chartDateField === "start") {
+      setChartStart(tempChartDate);
+    } else {
+      setChartEnd(tempChartDate);
+    }
   };
 
   const saveProfile = () => {
-    if (isEditingAnything()) {
+    if (!subsChanged && !goalsChanged) {
       return;
     }
-    let body = {
+    const body = {
       subscriptions,
       goals,
     };
@@ -344,248 +245,167 @@ const Profile: React.FC<ProfileProps> = ({userInfo}) => {
     });
   };
 
-  render() {
-    const curKey = this.state.hoverKey || this.state.defaultHoverKey;
-    let { total, itemized, transactionList } = this.getSpendingByCategory();
-    let data = [];
-    let curTransactions = transactionList[curKey] || [];
-    let [goalsYear, goalsQuarter] = this.state.goalsKey.split("-");
-    Object.keys(itemized).forEach((key) => {
-      data.push({
-        title: key,
-        value: itemized[key],
-        color: CONSTANTS.COLOR_FOR_KEY(key),
-      });
+  const curKey = hoverKey || defaultHoverKey;
+  const { total, itemized, transactionList } = getSpendingByCategory();
+  const data: PieEntry[] = [];
+  const curTransactions = transactionList[curKey] || [];
+  const [goalsYear, goalsQuarter] = goalsKey.split("-");
+  Object.keys(itemized).forEach((key) => {
+    data.push({
+      title: key,
+      value: itemized[key],
+      color: colorForKey(key),
     });
-    return (
-      <div className="profileContainer">
-        {!selectingChart ? null : (
-          <div className="selectContainer" onClick={this.commitChartDate}>
-            <div className="selectPopup" onClick={(e) => e.stopPropagation()}>
-              Selecting {this.state.chartDateField} date as{" "}
-              {this.state.setChartDate}
-              <Calendar
-                className="subCalendar"
-                onClickDay={(e) => this.changeChartDate(e.toLocaleDateString())}
-                calendarType="US"
-                defaultValue={new Date(this.state.setChartDate)}
-              />
-              <div className="button saveButton" onClick={this.commitChartDate}>
-                Select Date
-              </div>
+  });
+  return (
+    <div className="profileContainer">
+      {!selectingChart ? null : (
+        <div className="selectContainer" onClick={commitChartDate}>
+          <div className="selectPopup" onClick={(e) => e.stopPropagation()}>
+            Selecting {chartDateField} date as {tempChartDate}
+            <Calendar
+              className="subCalendar"
+              onClickDay={(e: any) => setTempChartDate(e.toLocaleDateString())}
+              calendarType="US"
+              defaultValue={new Date(tempChartDate)}
+            />
+            <div className="button saveButton" onClick={commitChartDate}>
+              Select Date
             </div>
-          </div>
-        )}
-        <div className="subContainer">
-          <div className="subTitle">
-            <div className="subTitleMain">
-              SUBSCRIPTIONS
-              {this.subChanged() ? <div className="subChanged">*</div> : null}
-            </div>
-            <div className="subTitleSecondary">
-              <div className="smallButton text green" onClick={this.addSub}>
-                +
-              </div>
-            </div>
-          </div>
-          <div className="subList">
-            {subscriptions.map((el, ind) => (
-              <Subscription key={ind} subscription={el} />
-            ))}
-          </div>
-          <div
-            className={clsx("button saveButton", {
-              disabled: isEditingAnything(),
-            })}
-            onClick={saveProfile}
-          >
-            Save
           </div>
         </div>
-        <div className="goalContainer">
-          <div className="goalTitle">
-            <div className="goalTitleMain">
-              GOALS
-              {this.goalsChanged() ? (
-                <div className="goalChanged">*</div>
-              ) : null}
-            </div>
-            <div className="goalTitleSecondary">
-              <div
-                className="smallButton text"
-                onClick={() => this.moveGoalsKey(-1)}
-              >
-                {"<"}
-              </div>
-              {`${goalsYear} Q${goalsQuarter + 1}`}
-              <div
-                className="smallButton text"
-                onClick={() => this.moveGoalsKey(1)}
-              >
-                {">"}
-              </div>
-            </div>
-            <div className="goalTitleSecondary">
-              <div className="smallButton text green" onClick={this.addGoal}>
-                +
-              </div>
+      )}
+      <div className="subContainer">
+        <div className="subTitle">
+          <div className="subTitleMain">
+            SUBSCRIPTIONS
+            {!!subsChanged ? <div className="subChanged">*</div> : null}
+          </div>
+          <div className="subTitleSecondary">
+            <div className="smallButton text green" onClick={addSub}>
+              +
             </div>
           </div>
-          <div className="goalList">
-            {(this.state.goals[this.state.goalsKey] || []).map((el, ind) => (
-              <div
-                key={ind}
-                className={clsx("goalEntry", {
-                  passed: el.status === "passed",
-                  failed: el.status === "failed",
-                })}
-              >
-                <div className="goalHeader">
+        </div>
+        <div className="subList">
+          {subscriptions.map((el, ind) => (
+            <SubscriptionComponent
+              key={ind}
+              subscription={el}
+              editSubscription={(s: Subscription) => editSub(ind, s)}
+              deleteSubscription={() => deleteSub(ind)}
+              incrementEdits={() => setSubsChanged(subsChanged + 1)}
+              decrementEdits={() => setSubsChanged(subsChanged - 1)}
+            />
+          ))}
+        </div>
+        <div
+          className={clsx("button saveButton", {
+            disabled: !subsChanged && !goalsChanged,
+          })}
+          onClick={saveProfile}
+        >
+          Save
+        </div>
+      </div>
+      <div className="goalContainer">
+        <div className="goalTitle">
+          <div className="goalTitleMain">
+            GOALS
+            {!!goalsChanged ? <div className="goalChanged">*</div> : null}
+          </div>
+          <div className="goalTitleSecondary">
+            <div className="smallButton text" onClick={() => moveGoalsKey(-1)}>
+              {"<"}
+            </div>
+            {`${goalsYear} Q${goalsQuarter + 1}`}
+            <div className="smallButton text" onClick={() => moveGoalsKey(1)}>
+              {">"}
+            </div>
+          </div>
+          <div className="goalTitleSecondary">
+            <div className="smallButton text green" onClick={addGoal}>
+              +
+            </div>
+          </div>
+        </div>
+        <div className="goalList">
+          {(goals[goalsKey] || []).map((el, ind) => (
+            <GoalComponent
+              key={ind}
+              goal={el}
+              editGoal={(g: Goal) => editGoal(ind, g)}
+              deleteGoal={() => deleteGoal(ind)}
+              cycleStatus={() => cycleGoalStatus(ind)}
+              incrementEdits={() => setGoalsChanged(goalsChanged + 1)}
+              decrementEdits={() => setGoalsChanged(goalsChanged - 1)}
+            />
+          ))}
+        </div>
+        <div
+          className={clsx("button saveButton", {
+            disabled: !subsChanged && !goalsChanged,
+          })}
+          onClick={saveProfile}
+        >
+          Save
+        </div>
+      </div>
+      <div className="chartContainer">
+        <div className="chartHeader">
+          <div className="chartDate" onClick={() => selectChartDate("start")}>
+            {chartStart}
+          </div>
+          TO
+          <div className="chartDate" onClick={() => selectChartDate("end")}>
+            {chartEnd}
+          </div>
+          <div className="chartPresetList">
+            {_.values(Span).map((span) => (
+              <div className="chartPreset" onClick={() => setPresetSpan(span)}>
+                {span}
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="chartBody">
+          <div className="chartPie">
+            <PieChart
+              data={data}
+              onClick={(_, index) => setDefaultHoverKey(data[index].title)}
+              onMouseOver={(_, index) => setHoverKey(data[index].title)}
+              onMouseOut={() => setHoverKey("")}
+            />
+          </div>
+          <div className="chartTotals">
+            <div className="chartTotalMain">TOTAL: {formatCost(total)}</div>
+            <div className="chartDetails">
+              <div className="chartCategories">
+                {data.map((el, ind) => (
                   <div
-                    className="goalName"
-                    onClick={() => this.handleGoalClick(el)}
+                    key={ind}
+                    className={clsx({
+                      chartHoverKey: el.title === curKey,
+                    })}
                   >
-                    {el.editing ? (
-                      <input
-                        type="text"
-                        className="goalEditEntry"
-                        name="goalLocationEntry"
-                        id="goalLocationEntry"
-                        value={el.editName}
-                        onChange={(e) =>
-                          this.editGoal(el, "editName", e.target.value)
-                        }
-                        onClick={(e) => e.stopPropagation()}
-                      />
-                    ) : (
-                      el.name
-                    )}
+                    {el.title} : {formatCost(el.value)}
                   </div>
-                  <div className="goalIcons">
-                    <img
-                      className="smallButton buttonPicture"
-                      onClick={() => this.cycleGoalStatus(el)}
-                      src={"/media/refresh.svg"}
-                    />
-                    <img
-                      className="smallButton buttonPicture"
-                      onClick={
-                        el.editing
-                          ? () => this.commitGoalEdit(el)
-                          : () => this.startGoalEdit(el)
-                      }
-                      src={
-                        el.editing ? "/media/check.svg" : "/media/pencil.svg"
-                      }
-                    />
-                    <div
-                      className="smallButton text red"
-                      onClick={() => this.deleteGoal(ind)}
-                    >
-                      x
-                    </div>
-                  </div>
-                </div>
-                {el.show ? (
-                  <div className="goalBody">
-                    {el.editing ? (
-                      <textarea
-                        type="text"
-                        className="goalEditDescription"
-                        name="goalDescriptionEntry"
-                        id="goalDescriptionEntry"
-                        value={el.editDescription}
-                        onChange={(e) =>
-                          this.editGoal(el, "editDescription", e.target.value)
-                        }
-                        onClick={(e) => e.stopPropagation()}
-                      />
-                    ) : (
-                      el.description
-                    )}
-                  </div>
-                ) : null}
+                ))}
               </div>
-            ))}
-          </div>
-          <div
-            className={clsx("button saveButton", {
-              disabled: isEditingAnything(),
-            })}
-            onClick={saveProfile}
-          >
-            Save
-          </div>
-        </div>
-        <div className="chartContainer">
-          <div className="chartHeader">
-            <div
-              className="chartDate"
-              onClick={() => this.selectChartDate("start")}
-            >
-              {this.state.chartStart}
-            </div>
-            TO
-            <div
-              className="chartDate"
-              onClick={() => this.selectChartDate("end")}
-            >
-              {this.state.chartEnd}
-            </div>
-            <div className="chartPresetList">
-              {CONSTANTS.PRESET_SPANS.map((span) => (
-                <div
-                  className="chartPreset"
-                  onClick={() => this.setPresetSpan(span)}
-                >
-                  {span}
-                </div>
-              ))}
-            </div>
-          </div>
-          <div className="chartBody">
-            <div className="chartPie">
-              <PieChart
-                data={data}
-                onClick={(_, index) =>
-                  this.setDefaultHoverKey(data[index].title)
-                }
-                onMouseOver={(_, index) => this.setHoverKey(data[index].title)}
-                onMouseOut={() => this.setHoverKey("")}
-              />
-            </div>
-            <div className="chartTotals">
-              <div className="chartTotalMain">
-                TOTAL: {CONSTANTS.FORMAT_COST(total)}
-              </div>
-              <div className="chartDetails">
-                <div className="chartCategories">
-                  {data.map((el, ind) => (
-                    <div
-                      key={ind}
-                      className={clsx({
-                        chartHoverKey: el.title === curKey,
-                      })}
-                    >
-                      {el.title} : {CONSTANTS.FORMAT_COST(el.value)}
-                    </div>
-                  ))}
-                </div>
-                <div className="chartTransactions">
-                  {curTransactions.map((transaction, ind) => (
-                    <div key={ind}>
-                      {transaction.date} - {transaction.location}:{" "}
-                      {CONSTANTS.FORMAT_COST(transaction.cost)}
-                    </div>
-                  ))}
-                </div>
+              <div className="chartTransactions">
+                {curTransactions.map((transaction, ind) => (
+                  <div key={ind}>
+                    {transaction.date} - {transaction.location}:{" "}
+                    {formatCost(transaction.cost)}
+                  </div>
+                ))}
               </div>
             </div>
           </div>
         </div>
       </div>
-    );
-  }
-}
+    </div>
+  );
+};
 
 export default Profile;

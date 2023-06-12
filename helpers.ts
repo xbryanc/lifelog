@@ -1,27 +1,27 @@
 import { Span, Subscription, SubscriptionFrequency } from "./defaults";
 
 export const sortByDate = (a: string, b: string) => {
-  let dateA = new Date(a);
-  let dateB = new Date(b);
+  const dateA = new Date(a);
+  const dateB = new Date(b);
   return dateA < dateB ? -1 : 1;
 };
 
 export const toGoalsKey = (selectedDate: string) => {
-  let curDate = new Date(selectedDate);
+  const curDate = new Date(selectedDate);
   const year = curDate.getFullYear();
   const month = curDate.getMonth();
   return `${year}-${Math.floor(month / 3)}`;
 };
 
-export const subApplies = (sub: Subscription, selectedDate: string) => {
-  let curDate = new Date(selectedDate);
+export const subApplies = (sub: Subscription, selectedDate: string | Date) => {
+  const curDate = new Date(selectedDate);
   if (sub.end !== "" && new Date(sub.end) < curDate) {
     return false;
   }
   if (!sub.start || sub.start === "" || new Date(sub.start) > curDate) {
     return false;
   }
-  let startDate = new Date(sub.start);
+  const startDate = new Date(sub.start);
   if (sub.frequency === SubscriptionFrequency.DAILY) {
     return true;
   } else if (sub.frequency === SubscriptionFrequency.WEEKLY) {
@@ -38,8 +38,8 @@ export const subApplies = (sub: Subscription, selectedDate: string) => {
 };
 
 export const subtractPreset = (date: string, span: Span) => {
-  let curDate = new Date(date);
-  let newDate = curDate;
+  const curDate = new Date(date);
+  const newDate = curDate;
   if (span !== Span.DAY) {
     if (span === Span.WEEK) {
       newDate.setDate(curDate.getDate() - 7);
@@ -84,10 +84,10 @@ export const colorForKey = (key: string) => {
     return hash;
   }
 
-  let hash = djb2(key);
-  let r = (hash & 0xff0000) >> 16;
-  let g = (hash & 0x00ff00) >> 8;
-  let b = hash & 0x0000ff;
+  const hash = djb2(key);
+  const r = (hash & 0xff0000) >> 16;
+  const g = (hash & 0x00ff00) >> 8;
+  const b = hash & 0x0000ff;
   return (
     "#" +
     ("0" + r.toString(16)).substr(-2) +
