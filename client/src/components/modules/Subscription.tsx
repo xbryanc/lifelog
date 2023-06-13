@@ -10,10 +10,10 @@ import {
   formatFrequency,
   formatSubTime,
 } from "../../../../helpers";
-import "../../css/app.css";
-import "../../css/home.css";
+import { makeStyles } from "../../theme";
 
 interface SubscriptionProps {
+  highlight?: boolean;
   subscription: Subscription;
   editSubscription: (s: Subscription) => void;
   deleteSubscription: () => void;
@@ -22,12 +22,14 @@ interface SubscriptionProps {
 }
 
 const Subscription: React.FC<SubscriptionProps> = ({
+  highlight,
   subscription,
   editSubscription,
   deleteSubscription: _deleteSubscription,
   incrementEdits,
   decrementEdits,
 }) => {
+  const classes = useStyles();
   const [show, setShow] = useState(false);
   const [start, setStart] = useState(subscription.start);
   const [end, setEnd] = useState(subscription.end);
@@ -107,29 +109,57 @@ const Subscription: React.FC<SubscriptionProps> = ({
   };
 
   return (
-    <div className="subEntry">
+    <div
+      className={clsx(classes.entry, {
+        highlight: !!highlight,
+      })}
+    >
       {!showSelect ? null : (
-        <div className="selectContainer" onClick={commitDate}>
-          <div className="selectPopup" onClick={(e) => e.stopPropagation()}>
+        <div className={classes.selectContainer} onClick={commitDate}>
+          <div
+            className={classes.selectPopup}
+            onClick={(e) => e.stopPropagation()}
+          >
             Selecting {endpointName} date as {endpointDate}
-            <Calendar
-              className="subCalendar"
-              onClickDay={(e: any) => setEndpointDate(e.toLocaleDateString())}
-              calendarType="US"
-              defaultValue={new Date(endpointDate)}
-            />
-            <div className="button saveButton" onClick={commitDate}>
+            <div>
+              <Calendar
+                onClickDay={(e: any) => setEndpointDate(e.toLocaleDateString())}
+                calendarType="US"
+                defaultValue={new Date(endpointDate)}
+              />
+              <style>
+                {`
+                  .react-calendar__tile {
+                      display: flex;
+                      flex-direction: row;
+                      justify-content: center;
+                  }
+
+                  .react-calendar__tile--now {
+                      border-color: magenta;
+                  }
+
+                  .react-calendar__tile--active {
+                      border-color: cyan;
+                  }
+                `}
+              </style>
+            </div>
+            <div
+              className={clsx(classes.button, "savebutton")}
+              onClick={commitDate}
+            >
               Select Date
             </div>
           </div>
         </div>
       )}
-      <div className="subHeader">
-        <div className="subLocation" onClick={() => setShow(!show)}>
+      <div className={classes.header}>
+        <div className={classes.location} onClick={() => setShow(!show)}>
           {editing ? (
             <input
               type="text"
-              className="subEditEntry"
+              className={classes.editEntry}
               name="subLocationEntry"
               id="subLocationEntry"
               value={editLocation}
@@ -141,7 +171,7 @@ const Subscription: React.FC<SubscriptionProps> = ({
           )}
         </div>
         <div
-          className={clsx("subTimeFrame", {
+          className={clsx(classes.timeFrame, {
             editing: editing,
           })}
           onClick={() => {
@@ -149,26 +179,25 @@ const Subscription: React.FC<SubscriptionProps> = ({
           }}
         >
           <div
-            className={clsx("subTimeStart", {
+            className={clsx(classes.timeStart, {
               editing,
             })}
             onClick={() => selectDate("start")}
           >
             {formatSubTime(start)}
           </div>
-          <div className="subTimeDash">-</div>
+          <div className={classes.timeDash}>-</div>
           <div
-            className={clsx("subTimeEnd", {
+            className={clsx(classes.timeEnd, {
               editing,
             })}
             onClick={() => selectDate("end")}
           >
             {formatSubTime(end)}
           </div>
-          <div className="subTimeFrequency">
+          <div>
             {editing ? (
               <select
-                className="subFrequencyEntry"
                 name="subFrequency"
                 id="subFrequency"
                 value={frequency}
@@ -187,15 +216,15 @@ const Subscription: React.FC<SubscriptionProps> = ({
             )}
           </div>
         </div>
-        <div className="subTagsList" onClick={() => setShow(!show)}>
+        <div className={classes.tagsList} onClick={() => setShow(!show)}>
           {tags.map((tag, tagInd) => (
-            <div key={tagInd} className="subTag">
+            <div key={tagInd} className={classes.tag}>
               {tag}
             </div>
           ))}
         </div>
         <div
-          className={clsx("subCost", {
+          className={clsx(classes.cost, {
             zero: !editing && !cost,
           })}
           onClick={() => setShow(!show)}
@@ -203,7 +232,7 @@ const Subscription: React.FC<SubscriptionProps> = ({
           {editing ? (
             <input
               type="number"
-              className="subEditEntry"
+              className={classes.editEntry}
               name="subCostEntry"
               id="subCostEntry"
               value={editCost}
@@ -214,22 +243,25 @@ const Subscription: React.FC<SubscriptionProps> = ({
             formatCost(cost)
           )}
         </div>
-        <div className="subIcons">
+        <div className={classes.icons}>
           <img
-            className="smallButton buttonPicture"
+            className={clsx(classes.smallButton, classes.buttonPicture)}
             onClick={editing ? commitSubEdit : startSubEdit}
             src={editing ? "/media/check.svg" : "/media/pencil.svg"}
           />
-          <div className="smallButton text red" onClick={deleteSubscription}>
+          <div
+            className={clsx(classes.smallButton, "text red")}
+            onClick={deleteSubscription}
+          >
             x
           </div>
         </div>
       </div>
       {show ? (
-        <div className="subBody">
+        <div className={classes.body}>
           {editing ? (
             <textarea
-              className="subEditDescription"
+              className={classes.editDescription}
               name="subDescriptionEntry"
               id="subDescriptionEntry"
               value={editDescription}
@@ -244,5 +276,170 @@ const Subscription: React.FC<SubscriptionProps> = ({
     </div>
   );
 };
+
+const useStyles = makeStyles((theme) => ({
+  header: {
+    display: "flex",
+    flexDirection: "row",
+    borderBottom: "1px solid black",
+    padding: "0px 3px",
+  },
+  location: {
+    cursor: "pointer",
+    flexGrow: 0,
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "center",
+    padding: "0px 5px",
+  },
+  tagsList: {
+    cursor: "pointer",
+    flexGrow: 1,
+    display: "flex",
+    flexDirection: "row",
+  },
+  tag: {
+    border: "1px solid black",
+    borderRadius: "5px",
+    margin: "5px",
+    padding: "5px",
+  },
+  cost: {
+    cursor: "pointer",
+    flexGrow: 0,
+    borderLeft: "1px solid black",
+    borderRight: "1px solid black",
+    padding: "0px 3px",
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "center",
+  },
+  zero: {
+    color: "red",
+  },
+  entry: {
+    border: "1px solid black",
+    borderRadius: "5px",
+    marginTop: "3px",
+    "&.highlight": {
+      backgroundColor: theme.colors.periwinkle50,
+    },
+  },
+  body: {
+    padding: "5px 10px",
+    borderBottom: "1px solid black",
+  },
+  icons: {
+    flexGrow: 0,
+    padding: "5px",
+    display: "flex",
+    flexDirection: "row",
+    justifyContent: "center",
+  },
+  editEntry: {
+    width: "100%",
+  },
+  editDescription: {
+    width: "100%",
+  },
+  timeFrame: {
+    flexGrow: 0,
+    display: "flex",
+    flexDirection: "row",
+    alignItems: "center",
+    borderLeft: "1px solid black",
+    borderRight: "1px solid black",
+    padding: "0px 5px",
+    cursor: "pointer",
+    "&.editing": {
+      cursor: "default",
+    },
+  },
+  timeStart: {
+    "&.editing": {
+      cursor: "pointer",
+    },
+  },
+  timeEnd: {
+    "&.editing": {
+      cursor: "pointer",
+    },
+  },
+  timeDash: {
+    margin: "0px 5px",
+  },
+  selectContainer: {
+    position: "fixed",
+    width: "100%",
+    height: "100%",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    margin: "auto",
+    zIndex: 150,
+  },
+  selectPopup: {
+    display: "flex",
+    flexDirection: "column",
+    position: "absolute",
+    left: "10%",
+    right: "10%",
+    top: "10%",
+    bottom: "10%",
+    margin: "auto",
+    backgroundColor: "whitesmoke",
+    border: `1px solid ${theme.colors.coolGray80}`,
+    borderRadius: "5px",
+    boxShadow: "0 4px 8px rgba(0, 0, 0, 0.2), 0 6px 20px rgba(0, 0, 0, 0.2)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  button: {
+    cursor: "pointer",
+    fontFamily: "Montserrat, sans-serif",
+    letterSpacing: "0.1em",
+    fontSize: "2vh",
+    lineHeight: 1,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "0.55em 1.5em 0.6em",
+    borderRadius: "100vw",
+    textDecorationLine: "none",
+    border: `0.08em solid ${theme.colors.black}`,
+    textAlign: "center",
+    wordWrap: "break-word",
+    transition: "transform 1s ease, box-shadow 1s ease",
+    "&:hover": {
+      transform: "scale(1.05, 1.05)",
+      boxShadow: "0 2px 4px rgba(0, 0, 0, 0.2), 0 3px 10px rgba(0, 0, 0, 0.19)",
+    },
+    "&.disabled:hover": {
+      transform: "none",
+      boxShadow: "none",
+      cursor: "default",
+    },
+  },
+  smallButton: {
+    cursor: "pointer",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    "&.text": {
+      fontSize: "20px",
+      fontWeight: "bold",
+    },
+    "&.red": {
+      color: theme.colors.red,
+    },
+    "&.green": {
+      color: theme.colors.green,
+    },
+  },
+  buttonPicture: {
+    width: "30px",
+  },
+}));
 
 export default Subscription;

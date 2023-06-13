@@ -4,8 +4,6 @@ import Calendar from "react-calendar";
 import _ from "lodash";
 import clsx from "clsx";
 import { PieChart } from "react-minimal-pie-chart";
-import "../../css/app.css";
-import "../../css/profile.css";
 
 import {
   EMPTY_GOAL,
@@ -26,6 +24,7 @@ import {
 } from "../../../../helpers";
 import SubscriptionComponent from "../modules/Subscription";
 import GoalComponent from "../modules/Goal";
+import { makeStyles } from "../../theme";
 
 interface ProfileProps {
   userInfo: User;
@@ -44,6 +43,7 @@ interface PieEntry {
 }
 
 const Profile: React.FC<ProfileProps> = ({ userInfo }) => {
+  const classes = useStyles();
   const [subscriptions, setSubscriptions] = useState(
     _.cloneDeep(userInfo.subscriptions)
   );
@@ -168,7 +168,7 @@ const Profile: React.FC<ProfileProps> = ({ userInfo }) => {
     } else if (goal.status === GoalStatus.PASSED) {
       goal.status = GoalStatus.FAILED;
     }
-    setGoals(goals);
+    setGoals(newGoals);
   };
 
   const editGoal = (ind: number, newGoal: Goal) => {
@@ -258,36 +258,62 @@ const Profile: React.FC<ProfileProps> = ({ userInfo }) => {
     .map((s) => Number.parseInt(s));
 
   return (
-    <div className="profileContainer">
+    <div className={classes.profileContainer}>
       {!selectingChart ? null : (
-        <div className="selectContainer" onClick={commitChartDate}>
-          <div className="selectPopup" onClick={(e) => e.stopPropagation()}>
+        <div className={classes.selectContainer} onClick={commitChartDate}>
+          <div
+            className={classes.selectPopup}
+            onClick={(e) => e.stopPropagation()}
+          >
             Selecting {chartDateField} date as {tempChartDate}
-            <Calendar
-              className="subCalendar"
-              onClickDay={(e: any) => setTempChartDate(e.toLocaleDateString())}
-              calendarType="US"
-              defaultValue={new Date(tempChartDate)}
-            />
-            <div className="button saveButton" onClick={commitChartDate}>
+            <div>
+              <Calendar
+                onClickDay={(e: any) =>
+                  setTempChartDate(e.toLocaleDateString())
+                }
+                calendarType="US"
+                defaultValue={new Date(tempChartDate)}
+              />
+              <style>
+                {`
+                  .react-calendar__tile {
+                      display: flex;
+                      flex-direction: row;
+                      justify-content: center;
+                  }
+
+                  .react-calendar__tile--now {
+                      border-color: magenta;
+                  }
+
+                  .react-calendar__tile--active {
+                      border-color: cyan;
+                  }
+                `}
+              </style>
+            </div>
+            <div className={classes.button} onClick={commitChartDate}>
               Select Date
             </div>
           </div>
         </div>
       )}
-      <div className="subContainer">
-        <div className="subTitle">
-          <div className="subTitleMain">
+      <div className={classes.subContainer}>
+        <div className={classes.subTitle}>
+          <div className={classes.subTitleMain}>
             SUBSCRIPTIONS
-            {!!subsChanged ? <div className="subChanged">*</div> : null}
+            {!!subsChanged ? <div className={classes.changed}>*</div> : null}
           </div>
-          <div className="subTitleSecondary">
-            <div className="smallButton text green" onClick={addSub}>
+          <div className={classes.subTitleSecondary}>
+            <div
+              className={clsx(classes.smallButton, "text green")}
+              onClick={addSub}
+            >
               +
             </div>
           </div>
         </div>
-        <div className="subList">
+        <div>
           {subscriptions.map((el, ind) => (
             <SubscriptionComponent
               key={ind}
@@ -300,7 +326,7 @@ const Profile: React.FC<ProfileProps> = ({ userInfo }) => {
           ))}
         </div>
         <div
-          className={clsx("button saveButton", {
+          className={clsx(classes.button, {
             disabled: subsChanged || goalsChanged,
           })}
           onClick={saveProfile}
@@ -308,28 +334,37 @@ const Profile: React.FC<ProfileProps> = ({ userInfo }) => {
           Save
         </div>
       </div>
-      <div className="goalContainer">
-        <div className="goalTitle">
-          <div className="goalTitleMain">
+      <div className={classes.goalContainer}>
+        <div className={classes.goalTitle}>
+          <div className={classes.goalTitleMain}>
             GOALS
-            {!!goalsChanged ? <div className="goalChanged">*</div> : null}
+            {!!goalsChanged ? <div className={classes.changed}>*</div> : null}
           </div>
-          <div className="goalTitleSecondary">
-            <div className="smallButton text" onClick={() => moveGoalsKey(-1)}>
+          <div className={classes.goalTitleSecondary}>
+            <div
+              className={clsx(classes.smallButton, "text")}
+              onClick={() => moveGoalsKey(-1)}
+            >
               {"<"}
             </div>
             {`${goalsYear} Q${goalsQuarter + 1}`}
-            <div className="smallButton text" onClick={() => moveGoalsKey(1)}>
+            <div
+              className={clsx(classes.smallButton, "text")}
+              onClick={() => moveGoalsKey(1)}
+            >
               {">"}
             </div>
           </div>
-          <div className="goalTitleSecondary">
-            <div className="smallButton text green" onClick={addGoal}>
+          <div className={classes.goalTitleSecondary}>
+            <div
+              className={clsx(classes.smallButton, "text green")}
+              onClick={addGoal}
+            >
               +
             </div>
           </div>
         </div>
-        <div className="goalList">
+        <div>
           {(goals[goalsKey] || []).map((el, ind) => (
             <GoalComponent
               key={ind}
@@ -343,7 +378,7 @@ const Profile: React.FC<ProfileProps> = ({ userInfo }) => {
           ))}
         </div>
         <div
-          className={clsx("button saveButton", {
+          className={clsx(classes.button, {
             disabled: subsChanged || goalsChanged,
           })}
           onClick={saveProfile}
@@ -351,25 +386,34 @@ const Profile: React.FC<ProfileProps> = ({ userInfo }) => {
           Save
         </div>
       </div>
-      <div className="chartContainer">
-        <div className="chartHeader">
-          <div className="chartDate" onClick={() => selectChartDate("start")}>
+      <div className={classes.chartContainer}>
+        <div className={classes.chartHeader}>
+          <div
+            className={classes.chartDate}
+            onClick={() => selectChartDate("start")}
+          >
             {chartStart}
           </div>
           TO
-          <div className="chartDate" onClick={() => selectChartDate("end")}>
+          <div
+            className={classes.chartDate}
+            onClick={() => selectChartDate("end")}
+          >
             {chartEnd}
           </div>
-          <div className="chartPresetList">
+          <div className={classes.chartPresetList}>
             {_.values(Span).map((span) => (
-              <div className="chartPreset" onClick={() => setPresetSpan(span)}>
+              <div
+                className={classes.chartPreset}
+                onClick={() => setPresetSpan(span)}
+              >
                 {span}
               </div>
             ))}
           </div>
         </div>
-        <div className="chartBody">
-          <div className="chartPie">
+        <div className={classes.chartBody}>
+          <div className={classes.chartPie}>
             <PieChart
               data={data}
               onClick={(_, index) => setDefaultHoverKey(data[index].title)}
@@ -377,10 +421,12 @@ const Profile: React.FC<ProfileProps> = ({ userInfo }) => {
               onMouseOut={() => setHoverKey("")}
             />
           </div>
-          <div className="chartTotals">
-            <div className="chartTotalMain">TOTAL: {formatCost(total)}</div>
-            <div className="chartDetails">
-              <div className="chartCategories">
+          <div className={classes.chartTotals}>
+            <div className={classes.chartTotalMain}>
+              TOTAL: {formatCost(total)}
+            </div>
+            <div className={classes.chartDetails}>
+              <div>
                 {data.map((el, ind) => (
                   <div
                     key={ind}
@@ -392,7 +438,7 @@ const Profile: React.FC<ProfileProps> = ({ userInfo }) => {
                   </div>
                 ))}
               </div>
-              <div className="chartTransactions">
+              <div className={classes.chartTransactions}>
                 {curTransactions.map((transaction, ind) => (
                   <div key={ind}>
                     {transaction.date} - {transaction.location}:{" "}
@@ -407,5 +453,190 @@ const Profile: React.FC<ProfileProps> = ({ userInfo }) => {
     </div>
   );
 };
+
+const useStyles = makeStyles((theme) => ({
+  selectContainer: {
+    position: "fixed",
+    width: "100%",
+    height: "100%",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    margin: "auto",
+    zIndex: 150,
+  },
+  selectPopup: {
+    display: "flex",
+    flexDirection: "column",
+    position: "absolute",
+    left: "10%",
+    right: "10%",
+    top: "10%",
+    bottom: "10%",
+    margin: "auto",
+    backgroundColor: "whitesmoke",
+    border: "1px solid #383838",
+    borderRadius: "5px",
+    boxShadow: "0 4px 8px rgba(0, 0, 0, 0.2), 0 6px 20px rgba(0, 0, 0, 0.2)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  button: {
+    cursor: "pointer",
+    fontFamily: "Montserrat, sans-serif",
+    letterSpacing: "0.1em",
+    fontSize: "2vh",
+    lineHeight: 1,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "0.55em 1.5em 0.6em",
+    borderRadius: "100vw",
+    textDecorationLine: "none",
+    border: `0.08em solid ${theme.colors.black}`,
+    textAlign: "center",
+    wordWrap: "break-word",
+    transition: "transform 1s ease, box-shadow 1s ease",
+    "&:hover": {
+      transform: "scale(1.05, 1.05)",
+      boxShadow: "0 2px 4px rgba(0, 0, 0, 0.2), 0 3px 10px rgba(0, 0, 0, 0.19)",
+    },
+    "&.disabled:hover": {
+      transform: "none",
+      boxShadow: "none",
+      cursor: "default",
+    },
+  },
+  smallButton: {
+    cursor: "pointer",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    "&.text": {
+      fontSize: "20px",
+      fontWeight: "bold",
+    },
+    "&.red": {
+      color: theme.colors.red,
+    },
+    "&.green": {
+      color: theme.colors.green,
+    },
+  },
+  profileContainer: {
+    display: "flex",
+    paddingTop: "8vh",
+    width: "100%",
+    height: "100%",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  chartDate: {
+    textDecoration: "underline",
+    margin: "0 5px",
+    cursor: "pointer",
+  },
+  chartContainer: {
+    border: "1px solid black",
+    borderRadius: "5px",
+    padding: "5px",
+    width: "80%",
+    marginTop: "10px",
+  },
+  chartHeader: {
+    display: "flex",
+    flexDirection: "row",
+    justifyContent: "center",
+    borderBottom: "1px solid black",
+    padding: "10px",
+  },
+  chartBody: {
+    display: "flex",
+    flexDirection: "row",
+  },
+  chartPie: {
+    width: "40vw",
+    height: "40vw",
+    padding: "5px",
+  },
+  chartTotals: {
+    width: "50%",
+    padding: "5px",
+    display: "flex",
+    flexDirection: "column",
+  },
+  chartTotalMain: {
+    marginBottom: "30px",
+    fontSize: "30px",
+  },
+  chartDetails: {
+    height: "70%",
+    display: "flex",
+    flexDirection: "row",
+  },
+  chartHoverKey: {
+    color: theme.colors.green,
+  },
+  chartPresetList: {
+    display: "flex",
+    flexDirection: "row",
+  },
+  chartPreset: {
+    cursor: "pointer",
+    margin: "0px 2px",
+    border: "1px solid black",
+    borderRadius: "5px",
+  },
+  chartTransactions: {
+    paddingLeft: "10px",
+  },
+  subContainer: {
+    border: "1px solid black",
+    borderRadius: "5px",
+    padding: "5px",
+    width: "80%",
+  },
+  subTitle: {
+    display: "flex",
+    flexDirection: "row",
+  },
+  subTitleMain: {
+    display: "flex",
+    flexDirection: "row",
+    flexGrow: 1,
+  },
+  subTitleSecondary: {
+    flexGrow: 0,
+  },
+  goalContainer: {
+    border: "1px solid black",
+    borderRadius: "5px",
+    padding: "5px",
+    width: "80%",
+  },
+  goalTitle: {
+    display: "flex",
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  goalTitleMain: {
+    display: "flex",
+    flexDirection: "row",
+    width: "10px",
+  },
+  goalTitleSecondary: {
+    display: "flex",
+    flexDirection: "row",
+    gap: "4px",
+    alignItems: "center",
+  },
+  changed: {
+    fontWeight: "bold",
+    fontSize: "20px",
+    color: theme.colors.orange,
+  },
+}));
 
 export default Profile;

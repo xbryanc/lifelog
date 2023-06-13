@@ -4,8 +4,7 @@ import clsx from "clsx";
 
 import { Transaction } from "../../../../defaults";
 import { formatCost } from "../../../../helpers";
-import "../../css/app.css";
-import "../../css/home.css";
+import { makeStyles } from "../../theme";
 
 interface TransactionProps {
   transaction: Transaction;
@@ -24,6 +23,7 @@ const Transaction: React.FC<TransactionProps> = ({
   incrementEdits,
   decrementEdits,
 }) => {
+  const classes = useStyles();
   const [show, setShow] = useState(false);
   const [cost, setCost] = useState(transaction.cost);
   const [description, setDescription] = useState(transaction.description);
@@ -77,13 +77,13 @@ const Transaction: React.FC<TransactionProps> = ({
   };
 
   return (
-    <div className="finTransaction">
-      <div className="transactionHeader">
-        <div className="transactionLocation" onClick={handleClick}>
+    <div className={classes.container}>
+      <div className={classes.header}>
+        <div className={classes.location} onClick={handleClick}>
           {editing ? (
             <input
               type="text"
-              className="transactionEditEntry"
+              className={classes.editEntry}
               name="transactionLocationEntry"
               id="transactionLocationEntry"
               value={editLocation}
@@ -94,15 +94,15 @@ const Transaction: React.FC<TransactionProps> = ({
             location
           )}
         </div>
-        <div className="transactionTagsList" onClick={handleClick}>
+        <div className={classes.tagsList} onClick={handleClick}>
           {tags.map((tag, tagInd) => (
-            <div key={`tag${tagInd}`} className="transactionTag">
+            <div key={`tag${tagInd}`} className={classes.tag}>
               {tag}
             </div>
           ))}
         </div>
         <div
-          className={clsx("transactionCost", {
+          className={clsx(classes.cost, {
             zero: !editing && !cost,
           })}
           onClick={handleClick}
@@ -110,7 +110,7 @@ const Transaction: React.FC<TransactionProps> = ({
           {editing ? (
             <input
               type="number"
-              className="transactionEditEntry"
+              className={classes.editEntry}
               name="transactionCostEntry"
               id="transactionCostEntry"
               value={editCost}
@@ -121,22 +121,25 @@ const Transaction: React.FC<TransactionProps> = ({
             formatCost(cost)
           )}
         </div>
-        <div className="transactionIcons">
+        <div className={classes.icons}>
           <img
-            className="smallButton buttonPicture"
+            className={clsx(classes.smallButton, classes.buttonPicture)}
             onClick={editing ? commitTransactionEdit : startTransactionEdit}
             src={editing ? "/media/check.svg" : "/media/pencil.svg"}
           />
-          <div className="smallButton text red" onClick={deleteTransaction}>
+          <div
+            className={clsx(classes.smallButton, "text red")}
+            onClick={deleteTransaction}
+          >
             x
           </div>
         </div>
       </div>
       {show ? (
-        <div className="transactionBody">
+        <div className={classes.body}>
           {editing ? (
             <textarea
-              className="transactionEditDescription"
+              className={classes.editDescription}
               name="transactionDescriptionEntry"
               id="transactionDescriptionEntry"
               value={editDescription}
@@ -151,5 +154,94 @@ const Transaction: React.FC<TransactionProps> = ({
     </div>
   );
 };
+
+const useStyles = makeStyles((theme) => ({
+  smallButton: {
+    cursor: "pointer",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    "&.text": {
+      fontSize: "20px",
+      fontWeight: "bold",
+    },
+    "&.red": {
+      color: theme.colors.red,
+    },
+    "&.green": {
+      color: theme.colors.green,
+    },
+  },
+  buttonPicture: {
+    width: "30px",
+  },
+  container: {
+    border: "1px solid black",
+    borderRadius: "5px",
+    marginTop: "3px",
+  },
+  header: {
+    display: "flex",
+    flexDirection: "row",
+    borderBottom: "1px solid black",
+    padding: "0px 3px",
+  },
+  headerSub: {
+    backgroundColor: theme.colors.periwinkle25,
+  },
+  location: {
+    cursor: "pointer",
+    flexGrow: 0,
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "center",
+    padding: "0px 5px",
+  },
+  tagsList: {
+    cursor: "pointer",
+    flexGrow: 1,
+    display: "flex",
+    flexDirection: "row",
+  },
+  tag: {
+    border: "1px solid black",
+    borderRadius: "5px",
+    margin: "5px",
+    padding: "5px",
+  },
+  cost: {
+    cursor: "pointer",
+    flexGrow: 0,
+    borderLeft: "1px solid black",
+    padding: "0px 3px",
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "center",
+    "&.zero": {
+      color: theme.colors.red,
+    },
+  },
+  editEntry: {
+    width: "100%",
+  },
+  editDescription: {
+    width: "100%",
+  },
+  icons: {
+    flexGrow: 0,
+    padding: "5px",
+    display: "flex",
+    flexDirection: "row",
+    justifyContent: "center",
+    borderLeft: "1px solid black",
+  },
+  body: {
+    padding: "5px 10px",
+    borderBottom: "1px solid black",
+  },
+  bodySub: {
+    backgroundColor: theme.colors.periwinkle25,
+  },
+}));
 
 export default Transaction;

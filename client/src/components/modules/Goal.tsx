@@ -3,8 +3,7 @@ import _ from "lodash";
 
 import clsx from "clsx";
 import { Goal, GoalStatus } from "../../../../defaults";
-import "../../css/app.css";
-import "../../css/home.css";
+import { makeStyles } from "../../theme";
 
 interface GoalProps {
   goal: Goal;
@@ -23,6 +22,7 @@ const Goal: React.FC<GoalProps> = ({
   incrementEdits,
   decrementEdits,
 }) => {
+  const classes = useStyles();
   const [show, setShow] = useState(false);
   const [name, setName] = useState(goal.name);
   const [description, setDescription] = useState(goal.description);
@@ -59,22 +59,23 @@ const Goal: React.FC<GoalProps> = ({
     setDescription(editDescription);
     decrementEdits();
   };
+  console.log(goal.status);
 
   return (
     <div
-      className={clsx("goalEntry", {
+      className={clsx(classes.entry, {
         passed: goal.status === GoalStatus.PASSED,
         failed: goal.status === GoalStatus.FAILED,
       })}
     >
-      <div className="goalHeader">
-        <div className="goalName" onClick={() => setShow(!show)}>
+      <div className={classes.header}>
+        <div className={classes.name} onClick={() => setShow(!show)}>
           {editing ? (
             <input
               type="text"
-              className="goalEditEntry"
-              name="goalLocationEntry"
-              id="goalLocationEntry"
+              className={classes.editEntry}
+              name="locationEntry"
+              id="locationEntry"
               value={editName}
               onChange={(e) => setEditName(e.target.value)}
               onClick={(e) => e.stopPropagation()}
@@ -83,27 +84,30 @@ const Goal: React.FC<GoalProps> = ({
             name
           )}
         </div>
-        <div className="goalIcons">
+        <div className={classes.icons}>
           <img
-            className="smallButton buttonPicture"
+            className={clsx(classes.smallButton, classes.buttonPicture)}
             onClick={cycleStatus}
             src={"/media/refresh.svg"}
           />
           <img
-            className="smallButton buttonPicture"
+            className={clsx(classes.smallButton, classes.buttonPicture)}
             onClick={editing ? commitGoalEdit : startGoalEdit}
             src={editing ? "/media/check.svg" : "/media/pencil.svg"}
           />
-          <div className="smallButton text red" onClick={deleteGoal}>
+          <div
+            className={clsx(classes.smallButton, "text red")}
+            onClick={deleteGoal}
+          >
             x
           </div>
         </div>
       </div>
       {show ? (
-        <div className="goalBody">
+        <div className={classes.body}>
           {editing ? (
             <textarea
-              className="goalEditDescription"
+              className={classes.editDescription}
               name="goalDescriptionEntry"
               id="goalDescriptionEntry"
               value={editDescription}
@@ -118,5 +122,69 @@ const Goal: React.FC<GoalProps> = ({
     </div>
   );
 };
+
+const useStyles = makeStyles((theme) => ({
+  smallButton: {
+    cursor: "pointer",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    "&.text": {
+      fontSize: "20px",
+      fontWeight: "bold",
+    },
+    "&.red": {
+      color: theme.colors.red,
+    },
+    "&.green": {
+      color: theme.colors.green,
+    },
+  },
+  buttonPicture: {
+    width: "30px",
+  },
+  header: {
+    display: "flex",
+    flexDirection: "row",
+    borderBottom: "1px solid black",
+    padding: "0px 3px",
+  },
+  name: {
+    cursor: "pointer",
+    flexGrow: 1,
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "center",
+    padding: "0px 5px",
+  },
+  entry: {
+    border: "1px solid black",
+    borderRadius: "5px",
+    marginTop: "3px",
+    "&.passed": {
+      backgroundColor: theme.colors.green400,
+    },
+    "&.failed": {
+      backgroundColor: theme.colors.orange,
+    },
+  },
+  body: {
+    padding: "5px 10px",
+    borderBottom: "1px solid black",
+  },
+  icons: {
+    flexGrow: 0,
+    padding: "5px",
+    display: "flex",
+    flexDirection: "row",
+    justifyContent: "center",
+  },
+  editEntry: {
+    width: "100%",
+  },
+  editDescription: {
+    width: "100%",
+  },
+}));
 
 export default Goal;

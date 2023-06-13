@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { Route, Switch, Redirect } from "react-router-dom";
+import { ThemeProvider } from "@material-ui/core/styles";
 
 import NavBar from "./modules/NavBar";
 
 import Root from "./pages/Root";
 import Home from "./pages/Home";
 import Profile from "./pages/Profile";
-import "../css/app.css";
 import { User } from "../../../defaults";
+import { theme } from "../theme";
 
 interface AppProps {}
 
@@ -48,7 +49,7 @@ const App: React.FC<AppProps> = () => {
     return <Redirect to="/" />;
   }
   return (
-    <div>
+    <ThemeProvider theme={theme}>
       <NavBar userInfo={userInfo} logout={logout} />
       <Switch>
         <Route
@@ -67,7 +68,7 @@ const App: React.FC<AppProps> = () => {
           render={(props) => <Profile {...props} userInfo={userInfo} />}
         />
       </Switch>
-    </div>
+    </ThemeProvider>
   );
 };
 

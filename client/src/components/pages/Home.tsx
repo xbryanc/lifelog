@@ -10,18 +10,19 @@ import {
   KONAMI_CODE,
   User,
   Transaction,
+  Subscription,
 } from "../../../../defaults";
 import { subApplies, sortByDate } from "../../../../helpers";
-import "../../css/app.css";
-import "../../css/home.css";
 import TransactionComponent from "../modules/Transaction";
-import Subscription from "../modules/Subscription";
+import SubscriptionComponent from "../modules/Subscription";
+import { makeStyles } from "../../theme";
 
 interface HomeProps {
   userInfo: User;
 }
 
 const Home: React.FC<HomeProps> = ({ userInfo }) => {
+  const classes = useStyles();
   const [selectedDate, setSelectedDate] = useState(
     new Date(Date.now()).toLocaleDateString()
   );
@@ -254,7 +255,7 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
     return _.range(0, STAR_MAX).map((ind) => (
       <img
         key={ind}
-        className="diaryStars"
+        className={classes.diaryStars}
         src={ind < displayRating ? filled : unfilled}
         onMouseEnter={() => setDisplayRating(ind + 1)}
         onMouseLeave={() => setDisplayRating(rating)}
@@ -359,54 +360,75 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
   };
 
   return (
-    <div className="homeContainer">
+    <div className={classes.homeContainer}>
       {konami && (
-        <div className="homePopupContainer" onClick={toggleKonami}>
-          <div className="homePopup" onClick={(e) => e.stopPropagation()}>
+        <div className={classes.homePopupContainer} onClick={toggleKonami}>
+          <div
+            className={classes.homePopup}
+            onClick={(e) => e.stopPropagation()}
+          >
             Enter bulk entries:
             <textarea
-              className="bulkEntry"
+              className={classes.bulkEntry}
               name="bulkEntry"
               id="bulkEntry"
               onChange={(e) => setBulkPaste(e.target.value)}
             />
-            <div className="button saveButton" onClick={saveBulk}>
+            <div className={classes.button} onClick={saveBulk}>
               Copy Over
             </div>
           </div>
         </div>
       )}
-      <Calendar
-        className="homeCalendar"
-        onClickDay={(e: any) => calendarChange(e.toLocaleDateString())}
-        calendarType="US"
-        tileClassName={(properties: any) => {
-          const dateKey = properties.date.toLocaleDateString();
-          if (properties.view === "month" && _.hasIn(diary, dateKey)) {
-            return `rating${diary[dateKey].rating}`;
-          }
-          return "calendarCell";
-        }}
-        tileContent={(properties: any) => {
-          const dateKey = properties.date.toLocaleDateString();
-          return incompleteDates.includes(dateKey) ? (
-            <div
-              className={clsx("calendarIncomplete", {
-                details: hoverDetails,
-              })}
-            >
-              !
-            </div>
-          ) : null;
-        }}
-        value={new Date(selectedDate)}
-      />
-      <div className="entryContainer">
-        <div className="diaryContainer">
-          <div className="searchContainer">
-            <div className="searchHeader">
+      <div>
+        <Calendar
+          className={classes.homeCalendar}
+          onClickDay={(e: any) => calendarChange(e.toLocaleDateString())}
+          calendarType="US"
+          tileClassName={(properties: any) => {
+            const dateKey = properties.date.toLocaleDateString();
+            const classNames: string[] = [
+              properties.view === "month" && _.hasIn(diary, dateKey)
+                ? classes[
+                    `rating${diary[dateKey].rating}` as keyof typeof classes
+                  ]
+                : classes.calendarCell,
+            ];
+            if (incompleteDates.includes(dateKey)) {
+              classNames.push(classes.calendarIncomplete);
+              if (hoverDetails) {
+                classNames.push("details");
+              }
+            }
+            return clsx(...classNames);
+          }}
+          value={new Date(selectedDate)}
+        />
+        <style>
+          {`
+            .react-calendar__tile {
+                display: flex;
+                flex-direction: row;
+                justify-content: center;
+            }
+
+            .react-calendar__tile--now {
+                border-color: magenta;
+            }
+
+            .react-calendar__tile--active {
+                border-color: cyan;
+            }
+          `}
+        </style>
+      </div>
+      <div className={classes.entryContainer}>
+        <div className={classes.diaryContainer}>
+          <div>
+            <div className={classes.searchHeader}>
               <input
                 type="text"
+                className={classes.searchString}
                 name="searchString"
                 id="searchString"
                 placeholder="Search..."
@@ -415,7 +437,7 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
               />
               {/* TODO: button to search as well */}
               <div
-                className="dateLink"
+                className={classes.dateLink}
                 onClick={() =>
                   calendarChange(new Date(Date.now()).toLocaleDateString())
                 }
@@ -423,10 +445,10 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
                 Today
               </div>
             </div>
-            <div className="searchResultList">
+            <div className={classes.searchResultList}>
               {searchResults.map((dateString) => (
                 <div
-                  className="dateLink homeDate"
+                  className={clsx(classes.dateLink, classes.homeDate)}
                   onClick={() => calendarChange(dateString)}
                 >
                   {dateString}
@@ -434,23 +456,23 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
               ))}
             </div>
           </div>
-          <div className="diaryHeader">
-            <div className="starsContainer">
+          <div className={classes.diaryHeader}>
+            <div className={classes.starsContainer}>
               {selectedDate}: {createStars()}
             </div>
             <div
-              className="changeContainer"
+              className={classes.changeContainer}
               onMouseEnter={() => setHoverDetails(true)}
               onMouseLeave={() => setHoverDetails(false)}
             >
               {!diaryText ? 0 : diaryText.length} / {changeSet.length} /{" "}
               {incompleteDates.length}
               {!changeSet.length ? (
-                <div className="changeDetails">
+                <div className={classes.changeDetails}>
                   letters / changes / incomplete
                 </div>
               ) : (
-                <div className="changeDetails">
+                <div className={classes.changeDetails}>
                   <ul>
                     {changeSet.map((el, ind) => (
                       <li key={ind}>{el}</li>
@@ -461,14 +483,14 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
             </div>
           </div>
           <textarea
-            className="diaryEntry"
+            className={classes.diaryEntry}
             name="diaryEntry"
             id="diaryEntry"
             value={diaryText}
             onChange={(e) => updateDiary(e.target.value, rating)}
           />
           <div
-            className={clsx("button saveButton", {
+            className={clsx(classes.button, {
               disabled: !!editCounts,
             })}
             onClick={saveInfo}
@@ -476,21 +498,23 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
             Save
           </div>
         </div>
-        <div className="finContainer">
-          <div className="finTagsContainer">
-            <div className="finHeader">
-              <div className="finHeaderMain">
+        <div className={classes.finContainer}>
+          <div className={classes.finTagsContainer}>
+            <div className={classes.finHeader}>
+              <div className={classes.finHeaderMain}>
                 TAGS
-                {tagsChanged() ? <div className="finChanged">*</div> : null}
+                {tagsChanged() ? (
+                  <div className={classes.changed}>*</div>
+                ) : null}
               </div>
             </div>
-            <div className="finTagsList">
+            <div className={classes.finTagsList}>
               {tags.map((el, ind) => {
                 const editing = _.hasIn(tagEdits, el);
                 return (
-                  <div key={ind} className="finTag">
+                  <div key={ind} className={classes.finTag}>
                     <div
-                      className={clsx("finTagName", {
+                      className={clsx(classes.finTagName, {
                         selected: el == selectedTag,
                       })}
                       onClick={() => selectTag(el)}
@@ -498,7 +522,6 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
                       {editing ? (
                         <input
                           type="text"
-                          className="tagEditEntry"
                           name="tagEditEntry"
                           id="tagEditEntry"
                           value={tagEdits[el]}
@@ -509,9 +532,12 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
                         el
                       )}
                     </div>
-                    <div className="finTagIcons">
+                    <div className={classes.finTagIcons}>
                       <img
-                        className="smallButton buttonPicture"
+                        className={clsx(
+                          classes.smallButton,
+                          classes.buttonPicture
+                        )}
                         onClick={
                           editing
                             ? () => changeTag(el, false)
@@ -520,7 +546,7 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
                         src={editing ? "/media/check.svg" : "/media/pencil.svg"}
                       />
                       <div
-                        className="smallButton text red"
+                        className={clsx(classes.smallButton, "text red")}
                         onClick={() => changeTag(el, true)}
                       >
                         x
@@ -530,9 +556,9 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
                 );
               })}
             </div>
-            <div className="finTagCreate">
+            <div className={classes.finTagCreate}>
               <div
-                className={clsx("smallButton text", {
+                className={clsx(classes.smallButton, "text", {
                   green: tagValid(newTag),
                 })}
                 onClick={addTag}
@@ -541,7 +567,6 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
               </div>
               <input
                 type="text"
-                className="finTagEntry"
                 name="tagEntry"
                 id="tagEntry"
                 placeholder="New Tag"
@@ -550,28 +575,29 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
               />
             </div>
           </div>
-          <div className="finTransactionContainer">
-            <div className="finHeader">
-              <div className="finHeaderMain">
+          <div className={classes.finTransactionContainer}>
+            <div className={classes.finHeader}>
+              <div className={classes.finHeaderMain}>
                 TRANSACTIONS
                 {financeChanged(selectedDate) ? (
-                  <div className="finChanged">*</div>
+                  <div className={classes.changed}>*</div>
                 ) : null}
               </div>
-              <div className="finHeaderSecondary">
+              <div className={classes.finHeaderSecondary}>
                 <div
-                  className="smallButton text green"
+                  className={clsx(classes.smallButton, "text green")}
                   onClick={addTransaction}
                 >
                   +
                 </div>
               </div>
             </div>
-            <div className="finTransactionList">
+            <div>
               {subscriptions.map((sub, ind) =>
                 !subApplies(sub, selectedDate) ? null : (
-                  <Subscription
+                  <SubscriptionComponent
                     key={ind}
+                    highlight
                     subscription={sub}
                     editSubscription={(s: Subscription) => editSub(ind, s)}
                     deleteSubscription={() => deleteSub(ind)}
@@ -598,5 +624,303 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
     </div>
   );
 };
+
+const useStyles = makeStyles((theme) => ({
+  button: {
+    cursor: "pointer",
+    fontFamily: "Montserrat, sans-serif",
+    letterSpacing: "0.1em",
+    fontSize: "2vh",
+    lineHeight: 1,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "0.55em 1.5em 0.6em",
+    borderRadius: "100vw",
+    textDecorationLine: "none",
+    border: `0.08em solid ${theme.colors.black}`,
+    textAlign: "center",
+    wordWrap: "break-word",
+    transition: "transform 1s ease, box-shadow 1s ease",
+    "&:hover": {
+      transform: "scale(1.05, 1.05)",
+      boxShadow: "0 2px 4px rgba(0, 0, 0, 0.2), 0 3px 10px rgba(0, 0, 0, 0.19)",
+    },
+    "&.disabled:hover": {
+      transform: "none",
+      boxShadow: "none",
+      cursor: "default",
+    },
+  },
+  smallButton: {
+    cursor: "pointer",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    "&.text": {
+      fontSize: "20px",
+      fontWeight: "bold",
+    },
+    "&.red": {
+      color: theme.colors.red,
+    },
+    "&.green": {
+      color: theme.colors.green,
+    },
+  },
+  buttonPicture: {
+    width: "30px",
+  },
+  homeContainer: {
+    display: "flex",
+    paddingTop: "8vh",
+    width: "100%",
+    height: "100%",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  entryContainer: {
+    display: "flex",
+    flexDirection: "row",
+    justifyContent: "center",
+    width: "100%",
+    padding: "0 5vw",
+  },
+  diaryContainer: {
+    width: "50%",
+    height: "100%",
+    margin: "5px",
+  },
+  finContainer: {
+    display: "flex",
+    flexDirection: "column",
+    gap: theme.spacing(1),
+    width: "50%",
+    height: "100%",
+    margin: "5px",
+  },
+  diaryHeader: {
+    display: "flex",
+    flexDirection: "row",
+  },
+  finHeader: {
+    display: "flex",
+    flexDirection: "row",
+  },
+  finHeaderMain: {
+    display: "flex",
+    flexDirection: "row",
+    flexGrow: 1,
+  },
+  finHeaderSecondary: {
+    flexGrow: 0,
+  },
+  finTagsContainer: {
+    border: "1px solid black",
+    borderRadius: "5px",
+    padding: "5px",
+  },
+  finTagsList: {
+    display: "flex",
+    flexDirection: "row",
+    flexWrap: "wrap",
+  },
+  finTagCreate: {
+    display: "flex",
+    flexDirection: "row",
+  },
+  finTag: {
+    display: "flex",
+    flexDirection: "row",
+    margin: "5px",
+  },
+  finTagIcons: {
+    border: "1px solid black",
+    borderRadius: "0 5px 5px 0",
+    padding: "3px",
+    display: "flex",
+    flexDirection: "row",
+    justifyContent: "center",
+  },
+  finTagName: {
+    border: "1px solid black",
+    borderRadius: "5px 0 0 5px",
+    cursor: "pointer",
+    padding: "3px",
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "center",
+    "&.selected": {
+      backgroundColor: theme.colors.green400,
+    },
+  },
+  finTransactionContainer: {
+    border: "1px solid black",
+    borderRadius: "5px",
+    padding: "5px",
+  },
+  finTransaction: {
+    border: "1px solid black",
+    borderRadius: "5px",
+    marginTop: "3px",
+  },
+  finTransactionCreate: {
+    display: "flex",
+    flexDirection: "row",
+    border: "1px solid black",
+    borderRadius: "5px",
+    padding: "5px",
+  },
+  changed: {
+    fontWeight: "bold",
+    fontSize: "20px",
+    color: "orange",
+  },
+  starsContainer: {
+    flexGrow: 1,
+  },
+  changeContainer: {
+    position: "relative",
+    display: "inline-block",
+    flexGrow: 0,
+    fontSize: "20px",
+    textAlign: "right",
+    borderBottom: "1px dotted black",
+    marginBottom: "5px",
+    "&:hover .changeDetails": {
+      visibility: "visible",
+    },
+  },
+  changeDetails: {
+    visibility: "hidden",
+    backgroundColor: "black",
+    color: "whitesmoke",
+    fontSize: "10px",
+    textAlign: "center",
+    padding: "5px 20px 5px 0px",
+    borderRadius: "3px",
+    position: "absolute",
+    zIndex: 1,
+    top: "-5px",
+    left: "105%",
+  },
+  diaryEntry: {
+    width: "100%",
+    height: "30vh",
+  },
+  bulkEntry: {
+    width: "60vw",
+    height: "50vh",
+  },
+  diaryStars: {
+    width: "2vw",
+  },
+  homeCalendar: {
+    width: "70vw",
+    margin: "20px 0",
+  },
+  calendarCell: {
+    padding: 0,
+  },
+  rating0: {
+    backgroundColor: "darkgrey",
+  },
+  rating1: {
+    backgroundColor: "#FF3300",
+  },
+  rating2: {
+    backgroundColor: "#ff6600",
+  },
+  rating3: {
+    backgroundColor: "#ff9900",
+  },
+  rating4: {
+    backgroundColor: "#FFCC00",
+  },
+  rating5: {
+    backgroundColor: "#FFFF00",
+  },
+  rating6: {
+    backgroundColor: "#ccff00",
+  },
+  rating7: {
+    backgroundColor: "#99ff00",
+  },
+  rating8: {
+    backgroundColor: "#66ff00",
+  },
+  rating9: {
+    backgroundColor: "#33ff00",
+  },
+  rating10: {
+    backgroundColor: "#00FF00",
+  },
+  reactCalendarTile: {
+    display: "flex",
+    flexDirection: "row",
+    justifyContent: "center",
+  },
+  reactCalendarTileNow: {
+    borderColor: theme.colors.indigo900,
+  },
+  reactCalendarTileActive: {
+    borderColor: theme.colors.periwinkle100,
+  },
+  calendarIncomplete: {
+    color: theme.colors.red,
+    "&.details": {
+      fontWeight: "bold",
+      textDecoration: "underline",
+    },
+  },
+  homePopupContainer: {
+    position: "fixed",
+    width: "100%",
+    height: "100%",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    margin: "auto",
+    zIndex: 150,
+  },
+  homePopup: {
+    display: "flex",
+    flexDirection: "column",
+    position: "absolute",
+    left: "10%",
+    right: "10%",
+    top: "10%",
+    bottom: "10%",
+    margin: "auto",
+    backgroundColor: "whitesmoke",
+    border: `1px solid ${theme.colors.coolGray80}`,
+    borderRadius: "5px",
+    boxShadow: "0 4px 8px rgba(0, 0, 0, 0.2), 0 6px 20px rgba(0, 0, 0, 0.2)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  searchString: {
+    flexGrow: 1,
+  },
+  homeDate: {
+    flexGrow: 0,
+  },
+  searchResultList: {
+    display: "flex",
+    flexDirection: "row",
+    flexWrap: "wrap",
+  },
+  dateLink: {
+    border: "1px solid black",
+    margin: "2px 5px",
+    borderRadius: "5px",
+  },
+  searchHeader: {
+    display: "flex",
+    flexDirection: "row",
+  },
+}));
 
 export default Home;
