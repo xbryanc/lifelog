@@ -1,19 +1,11 @@
 // import node modules
 import mongoose, { Document, Types, Model, Schema } from "mongoose";
-import {
-  ExtractStatics,
-  FinanceLog,
-  Diary,
-  Subscription,
-  GoalsList,
-} from "../../defaults";
+import { ExtractStatics, Subscription, GoalsList } from "../../defaults";
 
 export interface IUser extends Document, UserModel {
   _id: Types.ObjectId;
   name: string;
   googleid: string;
-  diary: Diary;
-  finance: FinanceLog;
   tags: string[];
   subscriptions: Subscription[];
   goals: GoalsList;
@@ -44,14 +36,6 @@ const schema: Schema<IUser, IUserModel> = new mongoose.Schema(
   {
     name: String,
     googleid: String,
-    diary: {
-      type: Object,
-      default: {},
-    },
-    finance: {
-      type: Object,
-      default: {},
-    },
     tags: [String],
     subscriptions: [
       {

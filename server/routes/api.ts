@@ -25,48 +25,7 @@ router.get("/whoami", function (req, res) {
 
 router.get("/user", async (req, res) => {
   const user = await User.findOne({ _id: req.query._id as string });
-  const diary: DiaryType = user.diary;
-  const diaryEntries = _.groupBy(
-    Object.entries(diary).filter(
-      ([key]) => !Number.isNaN(Number.parseInt(key))
-    ),
-    ([key]) => _.last(key.split("/"))
-  );
-  for (const [year, val] of Object.entries(diaryEntries)) {
-    let curEntry = await Diary.getDiaryForUser(req.user._id, year);
-    if (!curEntry) {
-      curEntry = await Diary.create({ user: req.user._id, year, diary: {} });
-    }
-    curEntry.diary = {
-      ...curEntry.diary,
-      ...Object.fromEntries(val),
-    };
-    await curEntry.save();
-  }
-
-  const finance: FinanceLog = user.finance;
-  const financeEntries = _.groupBy(
-    Object.entries(finance).filter(
-      ([key]) => !Number.isNaN(Number.parseInt(key))
-    ),
-    ([key]) => _.last(key.split("/"))
-  );
-  for (const [year, val] of Object.entries(financeEntries)) {
-    let curEntry = await Finance.getFinanceForUser(req.user._id, year);
-    if (!curEntry) {
-      curEntry = await Finance.create({
-        user: req.user._id,
-        year,
-        finance: {},
-      });
-    }
-    curEntry.finance = {
-      ...curEntry.finance,
-      ...Object.fromEntries(val),
-    };
-    await curEntry.save();
-  }
-  // await User.updateOne({ _id: req.user._id }, { diary: {}, finance: {} });
+  await User.updateOne({ _id: req.user._id }, { diary: {}, finance: {} });
   res.send(user);
 });
 
