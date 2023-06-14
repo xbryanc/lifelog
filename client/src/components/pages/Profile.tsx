@@ -8,6 +8,7 @@ import { PieChart } from "react-minimal-pie-chart";
 import {
   EMPTY_GOAL,
   EMPTY_SUBSCRIPTION,
+  FinanceLog,
   Goal,
   GoalStatus,
   MISC_TAG,
@@ -45,6 +46,7 @@ interface PieEntry {
 const Profile: React.FC<ProfileProps> = ({ userInfo }) => {
   const classes = useStyles();
   const [selectedTag, _setSelectedTag] = useState("");
+  const [finance, setFinance] = useState<FinanceLog>({});
   const [subscriptions, setSubscriptions] = useState(
     _.cloneDeep(userInfo.subscriptions)
   );
@@ -76,6 +78,20 @@ const Profile: React.FC<ProfileProps> = ({ userInfo }) => {
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      const finance: FinanceLog = {};
+      const allYears = await (await fetch("/api/all_years")).json();
+      for (const year of allYears) {
+        const newFinanceEntry = await (
+          await fetch(`/api/finance?year=${year}`)
+        ).json();
+        Object.assign(finance, newFinanceEntry);
+      }
+      setFinance(finance);
+    })();
   }, []);
 
   const selectTag = (tag: string) => {
@@ -147,7 +163,7 @@ const Profile: React.FC<ProfileProps> = ({ userInfo }) => {
         }
       });
       const dateStr = date.toLocaleDateString();
-      const transactions = userInfo.finance[dateStr] ?? [];
+      const transactions = finance[dateStr] ?? [];
       transactions.forEach((transaction) => {
         addSpending(
           transaction.tags.length === 0 ? MISC_TAG : transaction.tags[0],

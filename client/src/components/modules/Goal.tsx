@@ -59,7 +59,6 @@ const Goal: React.FC<GoalProps> = ({
     setDescription(editDescription);
     decrementEdits();
   };
-  console.log(goal.status);
 
   return (
     <div

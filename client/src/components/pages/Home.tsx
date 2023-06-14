@@ -11,6 +11,8 @@ import {
   User,
   Transaction,
   Subscription,
+  Diary,
+  FinanceLog,
 } from "../../../../defaults";
 import { subApplies, sortByDate } from "../../../../helpers";
 import TransactionComponent from "../modules/Transaction";
@@ -26,8 +28,11 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
   const [selectedDate, setSelectedDate] = useState(
     new Date(Date.now()).toLocaleDateString()
   );
-  const [diary, setDiary] = useState(_.cloneDeep(userInfo.diary));
-  const [finance, setFinance] = useState(_.cloneDeep(userInfo.finance));
+  const [queriedYears, setQueriedYears] = useState<string[]>([]);
+  const [originalDiary, setOriginalDiary] = useState<Diary>({});
+  const [diary, setDiary] = useState<Diary>(userInfo.diary);
+  const [originalFinance, setOriginalFinance] = useState<FinanceLog>({});
+  const [finance, setFinance] = useState<FinanceLog>(userInfo.finance);
   const [subscriptions, setSubscriptions] = useState(
     _.cloneDeep(userInfo.subscriptions)
   );
@@ -65,7 +70,69 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
 
   useEffect(() => {
     handleChange();
-  }, [diary, finance, selectedDate]);
+  }, [diary, originalDiary, finance, originalFinance, selectedDate]);
+
+  const fetchAllYears = async (): Promise<{
+    diary: Diary;
+    finance: FinanceLog;
+  }> => {
+    const newDiary: Diary = _.cloneDeep(diary);
+    const newFinance: FinanceLog = _.cloneDeep(finance);
+    const allYears = await (await fetch("/api/all_years")).json();
+    for (const year of allYears) {
+      const { diary: newDiaryEntry, finance: newFinanceEntry } =
+        await fetchYear(year);
+      Object.assign(newDiary, newDiaryEntry);
+      Object.assign(newFinance, newFinanceEntry);
+    }
+    return { diary: newDiary, finance: newFinance };
+  };
+
+  const fetchYear = async (
+    year: string
+  ): Promise<{ diary: Diary; finance: FinanceLog }> => {
+    let newDiary = diary;
+    let newFinance = finance;
+    if (year && !queriedYears.includes(year)) {
+      console.log(`fetching year`, year);
+      const newDiaryEntry = await (
+        await fetch(`/api/diary?year=${year}`)
+      ).json();
+      newDiary = {
+        ...diary,
+        ...newDiaryEntry,
+      };
+      setDiary(newDiary);
+      setOriginalDiary({
+        ...originalDiary,
+        ...newDiaryEntry,
+      });
+
+      const newFinanceEntry = await (
+        await fetch(`/api/finance?year=${year}`)
+      ).json();
+      newFinance = {
+        ...finance,
+        ...newFinanceEntry,
+      };
+      setFinance(newFinance);
+      setOriginalFinance({
+        ...originalFinance,
+        ...newFinanceEntry,
+      });
+
+      setQueriedYears([...queriedYears, year]);
+    }
+    return { diary: newDiary, finance: newFinance };
+  };
+
+  useEffect(() => {
+    (async () => {
+      const year = _.last(selectedDate.split("/"));
+      const { diary: newDiary } = await fetchYear(year);
+      calendarChange(selectedDate, newDiary);
+    })();
+  }, [selectedDate]);
 
   const handleChange = () => {
     const newChangeSet = _.cloneDeep(changeSet);
@@ -76,7 +143,7 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
     } else if (ind === -1 && isDirty) {
       newChangeSet.push(selectedDate);
     }
-    setChangeSet(changeSet.sort(sortByDate));
+    setChangeSet(newChangeSet.sort(sortByDate));
 
     const newIncompleteDates = _.cloneDeep(incompleteDates);
     const transactions = finance[selectedDate] ?? [];
@@ -90,7 +157,8 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
     setIncompleteDates(newIncompleteDates.sort(sortByDate));
   };
 
-  const search = () => {
+  const search = async () => {
+    const { diary, finance } = await fetchAllYears();
     const contains = (stringA: string, stringB: string) => {
       const strippedA = (stringA || "")
         .replace(/ /g, "")
@@ -127,14 +195,11 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
   };
 
   const diaryChanged = (dateOfInterest: string) => {
-    return !_.isEqual(diary[dateOfInterest], userInfo.diary[dateOfInterest]);
+    return !_.isEqual(diary[dateOfInterest], originalDiary[dateOfInterest]);
   };
 
   const financeChanged = (dateOfInterest: string) => {
-    return !_.isEqual(
-      finance[dateOfInterest],
-      userInfo.finance[dateOfInterest]
-    );
+    return !_.isEqual(finance[dateOfInterest], originalFinance[dateOfInterest]);
   };
 
   const tagsChanged = () => {
@@ -262,9 +327,10 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
     ));
   };
 
-  const calendarChange = (date: string) => {
-    if (_.hasIn(diary, date)) {
-      const { rating, description } = diary[date];
+  const calendarChange = (date: string, overrideDiary?: Diary) => {
+    const refDiary = overrideDiary ?? diary;
+    if (_.hasIn(refDiary, date)) {
+      const { rating, description } = refDiary[date];
       setSelectedDate(date);
       setDisplayRating(rating);
       setRating(rating);
@@ -382,6 +448,9 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
         <Calendar
           className={classes.homeCalendar}
           onClickDay={(e: any) => calendarChange(e.toLocaleDateString())}
+          onActiveStartDateChange={(e: any) =>
+            fetchYear(new Date(e.activeStartDate).getFullYear().toString())
+          }
           calendarType="US"
           tileClassName={(properties: any) => {
             const dateKey = properties.date.toLocaleDateString();
@@ -470,16 +539,20 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
               {!diaryText ? 0 : diaryText.length} / {changeSet.length} /{" "}
               {incompleteDates.length}
               {!changeSet.length ? (
-                <div className={classes.changeDetails}>
-                  letters / changes / incomplete
+                <div
+                  className={clsx(classes.changeDetails, {
+                    [classes.changeDetailsVisible]: hoverDetails,
+                  })}
+                >
+                  letters/changes/incomplete
                 </div>
               ) : (
-                <div className={classes.changeDetails}>
-                  <ul>
-                    {changeSet.map((el, ind) => (
-                      <li key={ind}>{el}</li>
-                    ))}
-                  </ul>
+                <div
+                  className={clsx(classes.changeDetails, {
+                    [classes.changeDetailsVisible]: hoverDetails,
+                  })}
+                >
+                  {changeSet.join("\n")}
                 </div>
               )}
             </div>
@@ -791,9 +864,6 @@ const useStyles = makeStyles((theme) => ({
     textAlign: "right",
     borderBottom: "1px dotted black",
     marginBottom: "5px",
-    "&:hover .changeDetails": {
-      visibility: "visible",
-    },
   },
   changeDetails: {
     visibility: "hidden",
@@ -801,12 +871,16 @@ const useStyles = makeStyles((theme) => ({
     color: "whitesmoke",
     fontSize: "10px",
     textAlign: "center",
-    padding: "5px 20px 5px 0px",
+    width: "fit-content",
+    padding: "5px",
     borderRadius: "3px",
     position: "absolute",
     zIndex: 1,
     top: "-5px",
     left: "105%",
+  },
+  changeDetailsVisible: {
+    visibility: "visible",
   },
   diaryEntry: {
     width: "100%",
