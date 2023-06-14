@@ -24,15 +24,31 @@ const Transaction: React.FC<TransactionProps> = ({
   decrementEdits,
 }) => {
   const classes = useStyles();
-  const [show, setShow] = useState(false);
+  const isIncomplete =
+    !transaction.location || !transaction.cost || !transaction.description;
+  const [show, setShow] = useState(isIncomplete);
   const [cost, setCost] = useState(transaction.cost);
   const [description, setDescription] = useState(transaction.description);
   const [location, setLocation] = useState(transaction.location);
   const [tags, setTags] = useState(transaction.tags);
-  const [editing, setEditing] = useState(false);
+  const [editing, setEditing] = useState(isIncomplete);
   const [editCost, setEditCost] = useState(cost);
   const [editDescription, setEditDescription] = useState(description);
   const [editLocation, setEditLocation] = useState(location);
+
+  useEffect(() => {
+    if (!editing) {
+      incrementEdits(); // to counteract below on initialization
+    }
+  }, []);
+
+  useEffect(() => {
+    if (editing) {
+      incrementEdits();
+    } else {
+      decrementEdits();
+    }
+  }, [editing]);
 
   useEffect(() => {
     editTransaction({ cost, description, location, tags });
@@ -65,7 +81,6 @@ const Transaction: React.FC<TransactionProps> = ({
     setEditCost(cost);
     setEditLocation(location);
     setEditDescription(description);
-    incrementEdits();
   };
 
   const commitTransactionEdit = () => {
@@ -73,7 +88,6 @@ const Transaction: React.FC<TransactionProps> = ({
     setCost(editCost);
     setLocation(editLocation);
     setDescription(editDescription);
-    decrementEdits();
   };
 
   return (
@@ -95,8 +109,8 @@ const Transaction: React.FC<TransactionProps> = ({
           )}
         </div>
         <div className={classes.tagsList} onClick={handleClick}>
-          {tags.map((tag, tagInd) => (
-            <div key={`tag${tagInd}`} className={classes.tag}>
+          {tags.map((tag) => (
+            <div key={tag} className={classes.tag}>
               {tag}
             </div>
           ))}

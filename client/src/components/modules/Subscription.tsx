@@ -32,7 +32,9 @@ const Subscription: React.FC<SubscriptionProps> = ({
   decrementEdits,
 }) => {
   const classes = useStyles();
-  const [show, setShow] = useState(false);
+  const isIncomplete =
+    !subscription.location || !subscription.cost || !subscription.description;
+  const [show, setShow] = useState(isIncomplete);
   const [start, setStart] = useState(subscription.start);
   const [end, setEnd] = useState(subscription.end);
   const [frequency, setFrequency] = useState<SubscriptionFrequency>(
@@ -42,7 +44,7 @@ const Subscription: React.FC<SubscriptionProps> = ({
   const [location, setLocation] = useState(subscription.location);
   const [description, setDescription] = useState(subscription.description);
   const [tags, setTags] = useState(subscription.tags);
-  const [editing, setEditing] = useState(false);
+  const [editing, setEditing] = useState(isIncomplete);
   const [editCost, setEditCost] = useState(cost);
   const [editLocation, setEditLocation] = useState(location);
   const [editDescription, setEditDescription] = useState(description);
@@ -64,6 +66,20 @@ const Subscription: React.FC<SubscriptionProps> = ({
       tags,
     });
   }, [start, end, frequency, cost, location, description, tags]);
+
+  useEffect(() => {
+    if (!editing) {
+      incrementEdits(); // to counteract below on initialization
+    }
+  }, []);
+
+  useEffect(() => {
+    if (editing) {
+      incrementEdits();
+    } else {
+      decrementEdits();
+    }
+  }, [editing]);
 
   const handleClick = () => {
     if (selectedTag === "") {
@@ -113,7 +129,6 @@ const Subscription: React.FC<SubscriptionProps> = ({
     setEditCost(cost);
     setEditLocation(location);
     setEditDescription(description);
-    incrementEdits();
   };
 
   const commitSubEdit = () => {
@@ -121,7 +136,6 @@ const Subscription: React.FC<SubscriptionProps> = ({
     setCost(editCost);
     setLocation(editLocation);
     setDescription(editDescription);
-    decrementEdits();
   };
 
   return (
@@ -232,7 +246,7 @@ const Subscription: React.FC<SubscriptionProps> = ({
         </div>
         <div className={classes.tagsList} onClick={handleClick}>
           {tags.map((tag, tagInd) => (
-            <div key={tagInd} className={classes.tag}>
+            <div key={tag} className={classes.tag}>
               {tag}
             </div>
           ))}

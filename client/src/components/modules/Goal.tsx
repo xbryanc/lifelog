@@ -23,11 +23,12 @@ const Goal: React.FC<GoalProps> = ({
   decrementEdits,
 }) => {
   const classes = useStyles();
-  const [show, setShow] = useState(false);
+  const isIncomplete = !goal.name || !goal.description;
+  const [show, setShow] = useState(isIncomplete);
   const [name, setName] = useState(goal.name);
   const [description, setDescription] = useState(goal.description);
 
-  const [editing, setEditing] = useState(false);
+  const [editing, setEditing] = useState(isIncomplete);
   const [editName, setEditName] = useState(name);
   const [editDescription, setEditDescription] = useState(description);
 
@@ -38,6 +39,20 @@ const Goal: React.FC<GoalProps> = ({
       status: goal.status,
     });
   }, [name, description]);
+
+  useEffect(() => {
+    if (!editing) {
+      incrementEdits(); // to counteract below on initialization
+    }
+  }, []);
+
+  useEffect(() => {
+    if (editing) {
+      incrementEdits();
+    } else {
+      decrementEdits();
+    }
+  }, [editing]);
 
   const deleteGoal = () => {
     if (editing) {
@@ -50,14 +65,12 @@ const Goal: React.FC<GoalProps> = ({
     setEditing(true);
     setEditName(name);
     setEditDescription(description);
-    incrementEdits();
   };
 
   const commitGoalEdit = () => {
     setEditing(false);
     setName(editName);
     setDescription(editDescription);
-    decrementEdits();
   };
 
   return (

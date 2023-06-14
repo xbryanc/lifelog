@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 // @ts-ignore
 import Calendar from "react-calendar";
 import _ from "lodash";
@@ -115,14 +115,14 @@ const Profile: React.FC<ProfileProps> = ({ userInfo }) => {
     _setDefaultHoverKey(defaultHoverKey === key ? "" : key);
   };
 
-  const getSpendingByCategory = () => {
+  const getSpendingByCategory = useCallback(() => {
     const startDate = new Date(chartStart);
     const endDate = new Date(chartEnd);
     let total = 0;
     const itemized: Record<string, number> = {};
     const transactionList: Record<string, TransactionListItem[]> = {};
     if (endDate < startDate) {
-      return { total, itemized, transactionList };
+      return { total, transactionList, pieData: [] };
     }
     const addSpending = (
       tag: string,
@@ -173,8 +173,16 @@ const Profile: React.FC<ProfileProps> = ({ userInfo }) => {
         );
       });
     }
-    return { total, itemized, transactionList };
-  };
+    const pieData: PieEntry[] = Object.entries(itemized).map(
+      ([key, value]) => ({
+        title: key,
+        value,
+        color: colorForKey(key),
+      })
+    );
+    console.log(itemized, pieData);
+    return { total, transactionList, pieData };
+  }, [chartStart, chartEnd, subscriptions, finance]);
 
   const addGoal = () => {
     const newGoals = _.cloneDeep(goals);
@@ -276,17 +284,22 @@ const Profile: React.FC<ProfileProps> = ({ userInfo }) => {
     });
   };
 
-  const curKey = hoverKey || defaultHoverKey;
-  const { total, itemized, transactionList } = getSpendingByCategory();
-  const data: PieEntry[] = Object.entries(itemized).map(([key, value]) => ({
-    title: key,
-    value,
-    color: colorForKey(key),
-  }));
-  const curTransactions = transactionList[curKey] || [];
-  const [goalsYear, goalsQuarter] = goalsKey
-    .split("-")
-    .map((s) => Number.parseInt(s));
+  const curKey = useMemo(
+    () => hoverKey || defaultHoverKey,
+    [hoverKey, defaultHoverKey]
+  );
+  const { total, pieData, transactionList } = useMemo(getSpendingByCategory, [
+    getSpendingByCategory,
+  ]);
+
+  const curTransactions = useMemo(
+    () => transactionList[curKey] || [],
+    [transactionList, curKey]
+  );
+  const [goalsYear, goalsQuarter] = useMemo(
+    () => goalsKey.split("-").map((s) => Number.parseInt(s)),
+    [goalsKey]
+  );
 
   return (
     <div className={classes.profileContainer}>
@@ -345,9 +358,9 @@ const Profile: React.FC<ProfileProps> = ({ userInfo }) => {
           </div>
         </div>
         <div className={classes.finTagsList}>
-          {userInfo.tags.map((el, ind) => {
+          {userInfo.tags.map((el) => {
             return (
-              <div key={ind} className={classes.finTag}>
+              <div key={el} className={classes.finTag}>
                 <div
                   className={clsx(classes.finTagName, {
                     selected: el == selectedTag,
@@ -368,8 +381,8 @@ const Profile: React.FC<ProfileProps> = ({ userInfo }) => {
               editSubscription={(s: Subscription) => editSub(ind, s)}
               deleteSubscription={() => deleteSub(ind)}
               selectedTag={selectedTag}
-              incrementEdits={() => setSubsChanged(subsChanged + 1)}
-              decrementEdits={() => setSubsChanged(subsChanged - 1)}
+              incrementEdits={() => setSubsChanged((sc) => sc + 1)}
+              decrementEdits={() => setSubsChanged((sc) => sc - 1)}
             />
           ))}
         </div>
@@ -420,8 +433,8 @@ const Profile: React.FC<ProfileProps> = ({ userInfo }) => {
               editGoal={(g: Goal) => editGoal(ind, g)}
               deleteGoal={() => deleteGoal(ind)}
               cycleStatus={() => cycleGoalStatus(ind)}
-              incrementEdits={() => setGoalsChanged(goalsChanged + 1)}
-              decrementEdits={() => setGoalsChanged(goalsChanged - 1)}
+              incrementEdits={() => setGoalsChanged((gc) => gc + 1)}
+              decrementEdits={() => setGoalsChanged((gc) => gc - 1)}
             />
           ))}
         </div>
@@ -463,9 +476,9 @@ const Profile: React.FC<ProfileProps> = ({ userInfo }) => {
         <div className={classes.chartBody}>
           <div className={classes.chartPie}>
             <PieChart
-              data={data}
-              onClick={(_, index) => setDefaultHoverKey(data[index].title)}
-              onMouseOver={(_, index) => setHoverKey(data[index].title)}
+              data={pieData}
+              onClick={(_, index) => setDefaultHoverKey(pieData[index].title)}
+              onMouseOver={(_, index) => setHoverKey(pieData[index].title)}
               onMouseOut={() => setHoverKey("")}
             />
           </div>
@@ -475,7 +488,7 @@ const Profile: React.FC<ProfileProps> = ({ userInfo }) => {
             </div>
             <div className={classes.chartDetails}>
               <div>
-                {data.map((el, ind) => (
+                {pieData.map((el, ind) => (
                   <div
                     key={ind}
                     className={clsx({

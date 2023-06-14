@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import _ from "lodash";
 // @ts-ignore
 import Calendar from "react-calendar";
@@ -58,6 +58,11 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
   );
   const [changeSet, setChangeSet] = useState<string[]>([]);
   const [incompleteDates, setIncompleteDates] = useState<string[]>([]);
+
+  const transactions = useMemo(
+    () => finance[selectedDate] ?? [],
+    [finance, selectedDate]
+  );
 
   useEffect(() => {
     document.title = "Home";
@@ -145,7 +150,6 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
     setChangeSet(newChangeSet.sort(sortByDate));
 
     const newIncompleteDates = _.cloneDeep(incompleteDates);
-    const transactions = finance[selectedDate] ?? [];
     const incomplete = transactions.some((t) => !t.cost || !t.tags.length);
     ind = newIncompleteDates.indexOf(selectedDate);
     if (ind >= 0 && !incomplete) {
@@ -581,7 +585,7 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
               {tags.map((el, ind) => {
                 const editing = _.hasIn(tagEdits, el);
                 return (
-                  <div key={ind} className={classes.finTag}>
+                  <div key={el} className={classes.finTag}>
                     <div
                       className={clsx(classes.finTagName, {
                         selected: el == selectedTag,
@@ -665,26 +669,26 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
               {subscriptions.map((sub, ind) =>
                 !subApplies(sub, selectedDate) ? null : (
                   <SubscriptionComponent
-                    key={ind}
+                    key={`${selectedDate}_${ind}`}
                     highlight
                     subscription={sub}
                     editSubscription={(s: Subscription) => editSub(ind, s)}
                     deleteSubscription={() => deleteSub(ind)}
                     selectedTag={selectedTag}
-                    incrementEdits={() => setEditCounts(editCounts + 1)}
-                    decrementEdits={() => setEditCounts(editCounts - 1)}
+                    incrementEdits={() => setEditCounts((ec) => ec + 1)}
+                    decrementEdits={() => setEditCounts((ec) => ec - 1)}
                   />
                 )
               )}
-              {(finance[selectedDate] ?? []).map((el, ind) => (
+              {transactions.map((el, ind) => (
                 <TransactionComponent
-                  key={ind}
+                  key={`${selectedDate}_${ind}`}
                   transaction={el}
                   editTransaction={(t: Transaction) => editTransaction(ind, t)}
                   deleteTransaction={() => deleteTransaction(ind)}
                   selectedTag={selectedTag}
-                  incrementEdits={() => setEditCounts(editCounts + 1)}
-                  decrementEdits={() => setEditCounts(editCounts - 1)}
+                  incrementEdits={() => setEditCounts((ec) => ec + 1)}
+                  decrementEdits={() => setEditCounts((ec) => ec - 1)}
                 />
               ))}
             </div>
