@@ -24,7 +24,7 @@ import {
 } from "../../../../helpers";
 import SubscriptionComponent from "../modules/Subscription";
 import GoalComponent from "../modules/Goal";
-import { makeStyles } from "../../theme";
+import { makeStyles, theme } from "../../theme";
 
 interface ProfileProps {
   userInfo: User;
@@ -283,11 +283,11 @@ const Profile: React.FC<ProfileProps> = ({ userInfo }) => {
                   }
 
                   .react-calendar__tile--now {
-                      border-color: magenta;
+                      border-color: ${theme.colors.periwinkle50};
                   }
 
                   .react-calendar__tile--active {
-                      border-color: cyan;
+                      border-color: ${theme.colors.gold};
                   }
                 `}
               </style>

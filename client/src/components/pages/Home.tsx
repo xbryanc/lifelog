@@ -15,7 +15,7 @@ import {
 import { subApplies, sortByDate } from "../../../../helpers";
 import TransactionComponent from "../modules/Transaction";
 import SubscriptionComponent from "../modules/Subscription";
-import { makeStyles } from "../../theme";
+import { makeStyles, theme } from "../../theme";
 
 interface HomeProps {
   userInfo: User;
@@ -413,11 +413,11 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
             }
 
             .react-calendar__tile--now {
-                border-color: magenta;
+                border-color: ${theme.colors.periwinkle50};
             }
 
             .react-calendar__tile--active {
-                border-color: cyan;
+                border-color: ${theme.colors.gold};
             }
           `}
         </style>

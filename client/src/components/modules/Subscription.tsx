@@ -10,7 +10,7 @@ import {
   formatFrequency,
   formatSubTime,
 } from "../../../../helpers";
-import { makeStyles } from "../../theme";
+import { makeStyles, theme } from "../../theme";
 
 interface SubscriptionProps {
   highlight?: boolean;
@@ -136,11 +136,11 @@ const Subscription: React.FC<SubscriptionProps> = ({
                   }
 
                   .react-calendar__tile--now {
-                      border-color: magenta;
+                      border-color: ${theme.colors.periwinkle50};
                   }
 
                   .react-calendar__tile--active {
-                      border-color: cyan;
+                      border-color: ${theme.colors.gold};
                   }
                 `}
               </style>
