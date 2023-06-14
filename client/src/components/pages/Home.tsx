@@ -30,9 +30,9 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
   );
   const [queriedYears, setQueriedYears] = useState<string[]>([]);
   const [originalDiary, setOriginalDiary] = useState<Diary>({});
-  const [diary, setDiary] = useState<Diary>(userInfo.diary);
+  const [diary, setDiary] = useState<Diary>({});
   const [originalFinance, setOriginalFinance] = useState<FinanceLog>({});
-  const [finance, setFinance] = useState<FinanceLog>(userInfo.finance);
+  const [finance, setFinance] = useState<FinanceLog>({});
   const [subscriptions, setSubscriptions] = useState(
     _.cloneDeep(userInfo.subscriptions)
   );
@@ -94,7 +94,6 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
     let newDiary = diary;
     let newFinance = finance;
     if (year && !queriedYears.includes(year)) {
-      console.log(`fetching year`, year);
       const newDiaryEntry = await (
         await fetch(`/api/diary?year=${year}`)
       ).json();
