@@ -180,7 +180,6 @@ const Profile: React.FC<ProfileProps> = ({ userInfo }) => {
         color: colorForKey(key),
       })
     );
-    console.log(itemized, pieData);
     return { total, transactionList, pieData };
   }, [chartStart, chartEnd, subscriptions, finance]);
 
