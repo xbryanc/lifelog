@@ -344,15 +344,10 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
 
   const updateDiary = (text: string, rating: number) => {
     const newDiary = _.cloneDeep(diary);
-    if (text !== "") {
-      newDiary[selectedDate] = {
-        description: text,
-        rating: rating,
-      };
-    } else {
-      rating = 0;
-      delete newDiary[selectedDate];
-    }
+    newDiary[selectedDate] = {
+      description: text,
+      rating: rating,
+    };
     setDiary(newDiary);
     setDiaryText(text);
     setRating(rating);

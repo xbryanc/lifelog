@@ -25,7 +25,6 @@ router.get("/whoami", function (req, res) {
 
 router.get("/user", async (req, res) => {
   const user = await User.findOne({ _id: req.query._id as string });
-  await User.updateOne({ _id: req.user._id }, { diary: {}, finance: {} });
   res.send(user);
 });
 
