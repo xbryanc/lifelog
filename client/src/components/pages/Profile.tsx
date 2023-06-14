@@ -44,6 +44,7 @@ interface PieEntry {
 
 const Profile: React.FC<ProfileProps> = ({ userInfo }) => {
   const classes = useStyles();
+  const [selectedTag, _setSelectedTag] = useState("");
   const [subscriptions, setSubscriptions] = useState(
     _.cloneDeep(userInfo.subscriptions)
   );
@@ -71,7 +72,21 @@ const Profile: React.FC<ProfileProps> = ({ userInfo }) => {
 
   useEffect(() => {
     document.title = "Profile";
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
   }, []);
+
+  const selectTag = (tag: string) => {
+    _setSelectedTag(selectedTag === tag ? "" : tag);
+  };
+
+  const handleKeyDown = (event: any) => {
+    if (event.key === "Escape") {
+      selectTag("");
+    }
+  };
 
   const setPresetSpan = (span: Span) => {
     const today = new Date(Date.now()).toLocaleDateString();
@@ -313,6 +328,22 @@ const Profile: React.FC<ProfileProps> = ({ userInfo }) => {
             </div>
           </div>
         </div>
+        <div className={classes.finTagsList}>
+          {userInfo.tags.map((el, ind) => {
+            return (
+              <div key={ind} className={classes.finTag}>
+                <div
+                  className={clsx(classes.finTagName, {
+                    selected: el == selectedTag,
+                  })}
+                  onClick={() => selectTag(el)}
+                >
+                  {el}
+                </div>
+              </div>
+            );
+          })}
+        </div>
         <div>
           {subscriptions.map((el, ind) => (
             <SubscriptionComponent
@@ -320,6 +351,7 @@ const Profile: React.FC<ProfileProps> = ({ userInfo }) => {
               subscription={el}
               editSubscription={(s: Subscription) => editSub(ind, s)}
               deleteSubscription={() => deleteSub(ind)}
+              selectedTag={selectedTag}
               incrementEdits={() => setSubsChanged(subsChanged + 1)}
               decrementEdits={() => setSubsChanged(subsChanged - 1)}
             />
@@ -431,7 +463,7 @@ const Profile: React.FC<ProfileProps> = ({ userInfo }) => {
                   <div
                     key={ind}
                     className={clsx({
-                      chartHoverKey: el.title === curKey,
+                      [classes.chartHoverKey]: el.title === curKey,
                     })}
                   >
                     {el.title} : {formatCost(el.value)}
@@ -543,7 +575,6 @@ const useStyles = makeStyles((theme) => ({
     borderRadius: "5px",
     padding: "5px",
     width: "80%",
-    marginTop: "10px",
   },
   chartHeader: {
     display: "flex",
@@ -615,6 +646,8 @@ const useStyles = makeStyles((theme) => ({
     borderRadius: "5px",
     padding: "5px",
     width: "80%",
+    marginTop: theme.spacing(1),
+    marginBottom: theme.spacing(1),
   },
   goalTitle: {
     display: "flex",
@@ -636,6 +669,28 @@ const useStyles = makeStyles((theme) => ({
     fontWeight: "bold",
     fontSize: "20px",
     color: theme.colors.orange,
+  },
+  finTagsList: {
+    display: "flex",
+    flexDirection: "row",
+    flexWrap: "wrap",
+  },
+  finTag: {
+    display: "flex",
+    flexDirection: "row",
+    margin: "5px",
+  },
+  finTagName: {
+    border: "1px solid black",
+    borderRadius: "5px",
+    cursor: "pointer",
+    padding: "3px",
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "center",
+    "&.selected": {
+      backgroundColor: theme.colors.green400,
+    },
   },
 }));
 

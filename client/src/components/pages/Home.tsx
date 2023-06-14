@@ -35,7 +35,7 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
   const [tagEdits, setTagEdits] = useState<Record<string, string>>({});
   const [editCounts, setEditCounts] = useState(0);
   const [newTag, setNewTag] = useState("");
-  const [selectedTag, setSelectedTag] = useState("");
+  const [selectedTag, _setSelectedTag] = useState("");
   const [keys, setKeys] = useState<string[]>([]);
   const [konami, setKonami] = useState(false);
   const [bulkPaste, setBulkPaste] = useState("");
@@ -90,7 +90,7 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
     setIncompleteDates(newIncompleteDates.sort(sortByDate));
   };
 
-  const maybeSearch = (e: any) => {
+  const search = () => {
     const contains = (stringA: string, stringB: string) => {
       const strippedA = (stringA || "")
         .replace(/ /g, "")
@@ -104,28 +104,26 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
         .toLowerCase();
       return strippedA.indexOf(strippedB) !== -1;
     };
-    if (e.key === "Enter") {
-      const results: string[] = [];
-      if (searchString) {
-        Object.keys(finance).forEach((date) => {
-          finance[date].forEach((transaction) => {
-            if (
-              contains(transaction.location, searchString) ||
-              contains(transaction.description, searchString)
-            ) {
-              results.push(date);
-              return;
-            }
-          });
-        });
-        Object.keys(diary).forEach((date) => {
-          if (contains(diary[date].description, searchString)) {
+    const results: string[] = [];
+    if (searchString) {
+      Object.keys(finance).forEach((date) => {
+        finance[date].forEach((transaction) => {
+          if (
+            contains(transaction.location, searchString) ||
+            contains(transaction.description, searchString)
+          ) {
             results.push(date);
+            return;
           }
         });
-      }
-      setSearchResults(_.uniq(results).sort(sortByDate));
+      });
+      Object.keys(diary).forEach((date) => {
+        if (contains(diary[date].description, searchString)) {
+          results.push(date);
+        }
+      });
     }
+    setSearchResults(_.uniq(results).sort(sortByDate));
   };
 
   const diaryChanged = (dateOfInterest: string) => {
@@ -214,12 +212,12 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
     }
     setTags(newTags);
     setFinance(newFinance);
-    setSelectedTag(nextSelectedTag);
+    _setSelectedTag(nextSelectedTag);
     setTagEdits(newTagEdits);
   };
 
   const selectTag = (tag: string) => {
-    setSelectedTag(selectedTag === tag ? "" : tag);
+    _setSelectedTag(selectedTag === tag ? "" : tag);
   };
 
   const addTransaction = () => {
@@ -433,11 +431,15 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
                 id="searchString"
                 placeholder="Search..."
                 onChange={(e) => setSearchString(e.target.value)}
-                onKeyPress={maybeSearch}
+                onKeyPress={(e) => {
+                  e.key === "Enter" && search();
+                }}
               />
-              {/* TODO: button to search as well */}
+              <div className={classes.simpleButton} onClick={search}>
+                Search
+              </div>
               <div
-                className={classes.dateLink}
+                className={classes.simpleButton}
                 onClick={() =>
                   calendarChange(new Date(Date.now()).toLocaleDateString())
                 }
@@ -448,7 +450,7 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
             <div className={classes.searchResultList}>
               {searchResults.map((dateString) => (
                 <div
-                  className={clsx(classes.dateLink, classes.homeDate)}
+                  className={clsx(classes.simpleButton, classes.homeDate)}
                   onClick={() => calendarChange(dateString)}
                 >
                   {dateString}
@@ -601,6 +603,7 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
                     subscription={sub}
                     editSubscription={(s: Subscription) => editSub(ind, s)}
                     deleteSubscription={() => deleteSub(ind)}
+                    selectedTag={selectedTag}
                     incrementEdits={() => setEditCounts(editCounts + 1)}
                     decrementEdits={() => setEditCounts(editCounts - 1)}
                   />
@@ -912,7 +915,8 @@ const useStyles = makeStyles((theme) => ({
     flexDirection: "row",
     flexWrap: "wrap",
   },
-  dateLink: {
+  simpleButton: {
+    cursor: "pointer",
     border: "1px solid black",
     margin: "2px 5px",
     borderRadius: "5px",

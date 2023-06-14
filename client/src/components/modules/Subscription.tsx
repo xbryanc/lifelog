@@ -17,6 +17,7 @@ interface SubscriptionProps {
   subscription: Subscription;
   editSubscription: (s: Subscription) => void;
   deleteSubscription: () => void;
+  selectedTag: string;
   incrementEdits: () => void;
   decrementEdits: () => void;
 }
@@ -26,6 +27,7 @@ const Subscription: React.FC<SubscriptionProps> = ({
   subscription,
   editSubscription,
   deleteSubscription: _deleteSubscription,
+  selectedTag,
   incrementEdits,
   decrementEdits,
 }) => {
@@ -39,7 +41,6 @@ const Subscription: React.FC<SubscriptionProps> = ({
   const [cost, setCost] = useState(subscription.cost);
   const [location, setLocation] = useState(subscription.location);
   const [description, setDescription] = useState(subscription.description);
-  // TODO: set tags
   const [tags, setTags] = useState(subscription.tags);
   const [editing, setEditing] = useState(false);
   const [editCost, setEditCost] = useState(cost);
@@ -63,6 +64,21 @@ const Subscription: React.FC<SubscriptionProps> = ({
       tags,
     });
   }, [start, end, frequency, cost, location, description, tags]);
+
+  const handleClick = () => {
+    if (selectedTag === "") {
+      setShow(!show);
+      return;
+    }
+    const newTags = _.cloneDeep(tags);
+    const tagIndex = newTags.indexOf(selectedTag);
+    if (tagIndex === -1) {
+      newTags.push(selectedTag);
+    } else {
+      newTags.splice(tagIndex, 1);
+    }
+    setTags(newTags);
+  };
 
   const selectDate = (fieldName: "start" | "end") => {
     if (!editing) {
@@ -155,7 +171,7 @@ const Subscription: React.FC<SubscriptionProps> = ({
         </div>
       )}
       <div className={classes.header}>
-        <div className={classes.location} onClick={() => setShow(!show)}>
+        <div className={classes.location} onClick={handleClick}>
           {editing ? (
             <input
               type="text"
@@ -174,9 +190,7 @@ const Subscription: React.FC<SubscriptionProps> = ({
           className={clsx(classes.timeFrame, {
             editing: editing,
           })}
-          onClick={() => {
-            if (!editing) setShow(!show);
-          }}
+          onClick={() => editing && handleClick()}
         >
           <div
             className={clsx(classes.timeStart, {
@@ -216,7 +230,7 @@ const Subscription: React.FC<SubscriptionProps> = ({
             )}
           </div>
         </div>
-        <div className={classes.tagsList} onClick={() => setShow(!show)}>
+        <div className={classes.tagsList} onClick={handleClick}>
           {tags.map((tag, tagInd) => (
             <div key={tagInd} className={classes.tag}>
               {tag}
@@ -227,7 +241,7 @@ const Subscription: React.FC<SubscriptionProps> = ({
           className={clsx(classes.cost, {
             zero: !editing && !cost,
           })}
-          onClick={() => setShow(!show)}
+          onClick={handleClick}
         >
           {editing ? (
             <input
