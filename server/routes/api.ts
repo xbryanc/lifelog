@@ -25,30 +25,6 @@ router.get("/whoami", function (req, res) {
 
 router.get("/user", async (req, res) => {
   const user = await User.findOne({ _id: req.query._id as string });
-  const diaries = await Diary.find({ user: req.user._id });
-  const finances = await Finance.find({ user: req.user._id });
-  for (const diary of diaries) {
-    diary.diary = Object.fromEntries(
-      Object.entries(diary.diary).map(([key, val]) => [
-        key,
-        {
-          description: val.description,
-          rating: Number.parseInt(val.rating.toString()),
-        },
-      ])
-    );
-  }
-  for (const finance of finances) {
-    finance.finance = Object.fromEntries(
-      Object.entries(finance.finance).map(([key, val]) => [
-        key,
-        val.map((v) => ({
-          ...v,
-          cost: Number.parseInt(v.cost.toString()),
-        })),
-      ])
-    );
-  }
   res.send(user);
 });
 
