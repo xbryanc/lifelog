@@ -74,6 +74,15 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
   }, []);
 
   useEffect(() => {
+    (async () => {
+      const newIncompleteDates = await (
+        await fetch("/api/incomplete_dates")
+      ).json();
+      setIncompleteDates(newIncompleteDates);
+    })();
+  }, []);
+
+  useEffect(() => {
     handleChange();
   }, [diary, originalDiary, finance, originalFinance, selectedDate]);
 

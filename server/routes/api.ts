@@ -28,6 +28,19 @@ router.get("/user", async (req, res) => {
   res.send(user);
 });
 
+router.get("/incomplete_dates", async (req, res) => {
+  const finances = await Finance.find({ user: req.user._id });
+  const dates: string[] = [];
+  finances.forEach((finance) => {
+    Object.keys(finance.finance).forEach((date) => {
+      if (finance.finance[date].some((t) => !t.cost || !t.tags.length)) {
+        dates.push(date);
+      }
+    });
+  });
+  res.send(dates);
+});
+
 router.get("/all_years", async (req, res) => {
   const diaries = await Diary.find({ user: req.user._id });
   const finances = await Finance.find({ user: req.user._id });
@@ -65,14 +78,14 @@ router.post("/save_info", connect.ensureLoggedIn(), async (req, res) => {
     ),
     ([key]) => _.last(key.split("/"))
   );
-  for (const [year, val] of Object.entries(diaryEntries)) {
+  for (const year of Object.keys(diaryEntries)) {
     let curEntry = await Diary.getDiaryForUser(req.user._id, year);
     if (!curEntry) {
       curEntry = await Diary.create({ user: req.user._id, year, diary: {} });
     }
     curEntry.diary = {
       ...curEntry.diary,
-      ...Object.fromEntries(val),
+      ...Object.fromEntries(diaryEntries[year]),
     };
     await curEntry.save();
   }
@@ -84,7 +97,7 @@ router.post("/save_info", connect.ensureLoggedIn(), async (req, res) => {
     ),
     ([key]) => _.last(key.split("/"))
   );
-  for (const [year, val] of Object.entries(financeEntries)) {
+  for (const year of Object.keys(financeEntries)) {
     let curEntry = await Finance.getFinanceForUser(req.user._id, year);
     if (!curEntry) {
       curEntry = await Finance.create({
@@ -95,7 +108,7 @@ router.post("/save_info", connect.ensureLoggedIn(), async (req, res) => {
     }
     curEntry.finance = {
       ...curEntry.finance,
-      ...Object.fromEntries(val),
+      ...Object.fromEntries(financeEntries[year]),
     };
     await curEntry.save();
   }
