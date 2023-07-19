@@ -427,7 +427,7 @@ const Profile: React.FC<ProfileProps> = ({ userInfo }) => {
         <div>
           {(goals[goalsKey] || []).map((el, ind) => (
             <GoalComponent
-              key={ind}
+              key={`${goalsKey}_${ind}`}
               goal={el}
               editGoal={(g: Goal) => editGoal(ind, g)}
               deleteGoal={() => deleteGoal(ind)}
@@ -487,9 +487,9 @@ const Profile: React.FC<ProfileProps> = ({ userInfo }) => {
             </div>
             <div className={classes.chartDetails}>
               <div>
-                {pieData.map((el, ind) => (
+                {pieData.map((el) => (
                   <div
-                    key={ind}
+                    key={`${el.title}_${el.value}`}
                     className={clsx({
                       [classes.chartHoverKey]: el.title === curKey,
                     })}
@@ -499,8 +499,10 @@ const Profile: React.FC<ProfileProps> = ({ userInfo }) => {
                 ))}
               </div>
               <div className={classes.chartTransactions}>
-                {curTransactions.map((transaction, ind) => (
-                  <div key={ind}>
+                {curTransactions.map((transaction) => (
+                  <div
+                    key={`${transaction.location}_${transaction.cost}_${transaction.date}`}
+                  >
                     {transaction.date} - {transaction.location}:{" "}
                     {formatCost(transaction.cost)}
                   </div>

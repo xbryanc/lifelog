@@ -17,7 +17,7 @@ interface GoalProps {
 const Goal: React.FC<GoalProps> = ({
   goal,
   editGoal,
-  deleteGoal: _deleteGoal,
+  deleteGoal,
   cycleStatus,
   incrementEdits,
   decrementEdits,
@@ -44,6 +44,11 @@ const Goal: React.FC<GoalProps> = ({
     if (!editing) {
       incrementEdits(); // to counteract below on initialization
     }
+    return () => {
+      if (editing) {
+        decrementEdits();
+      }
+    };
   }, []);
 
   useEffect(() => {
@@ -53,13 +58,6 @@ const Goal: React.FC<GoalProps> = ({
       decrementEdits();
     }
   }, [editing]);
-
-  const deleteGoal = () => {
-    if (editing) {
-      decrementEdits();
-    }
-    _deleteGoal();
-  };
 
   const startGoalEdit = () => {
     setEditing(true);

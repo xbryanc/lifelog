@@ -582,7 +582,7 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
               </div>
             </div>
             <div className={classes.finTagsList}>
-              {tags.map((el, ind) => {
+              {tags.map((el) => {
                 const editing = _.hasIn(tagEdits, el);
                 return (
                   <div key={el} className={classes.finTag}>

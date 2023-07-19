@@ -18,7 +18,7 @@ interface TransactionProps {
 const Transaction: React.FC<TransactionProps> = ({
   transaction,
   editTransaction,
-  deleteTransaction: _deleteTransaction,
+  deleteTransaction,
   selectedTag,
   incrementEdits,
   decrementEdits,
@@ -40,6 +40,11 @@ const Transaction: React.FC<TransactionProps> = ({
     if (!editing) {
       incrementEdits(); // to counteract below on initialization
     }
+    return () => {
+      if (editing) {
+        decrementEdits();
+      }
+    };
   }, []);
 
   useEffect(() => {
@@ -67,13 +72,6 @@ const Transaction: React.FC<TransactionProps> = ({
       newTags.splice(tagIndex, 1);
     }
     setTags(newTags);
-  };
-
-  const deleteTransaction = () => {
-    if (editing) {
-      decrementEdits();
-    }
-    _deleteTransaction();
   };
 
   const startTransactionEdit = () => {

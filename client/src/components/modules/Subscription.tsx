@@ -26,7 +26,7 @@ const Subscription: React.FC<SubscriptionProps> = ({
   highlight,
   subscription,
   editSubscription,
-  deleteSubscription: _deleteSubscription,
+  deleteSubscription,
   selectedTag,
   incrementEdits,
   decrementEdits,
@@ -71,6 +71,11 @@ const Subscription: React.FC<SubscriptionProps> = ({
     if (!editing) {
       incrementEdits(); // to counteract below on initialization
     }
+    return () => {
+      if (editing) {
+        decrementEdits();
+      }
+    };
   }, []);
 
   useEffect(() => {
@@ -115,13 +120,6 @@ const Subscription: React.FC<SubscriptionProps> = ({
       setEnd(endpointDate);
     }
     setShowSelect(false);
-  };
-
-  const deleteSubscription = () => {
-    if (editing) {
-      decrementEdits();
-    }
-    _deleteSubscription();
   };
 
   const startSubEdit = () => {
@@ -233,8 +231,8 @@ const Subscription: React.FC<SubscriptionProps> = ({
                   setFrequency(e.target.value as SubscriptionFrequency)
                 }
               >
-                {_.values(SubscriptionFrequency).map((freq, ind) => (
-                  <option key={ind} value={freq}>
+                {_.values(SubscriptionFrequency).map((freq) => (
+                  <option key={freq} value={freq}>
                     {freq}
                   </option>
                 ))}
@@ -245,7 +243,7 @@ const Subscription: React.FC<SubscriptionProps> = ({
           </div>
         </div>
         <div className={classes.tagsList} onClick={handleClick}>
-          {tags.map((tag, tagInd) => (
+          {tags.map((tag) => (
             <div key={tag} className={classes.tag}>
               {tag}
             </div>
