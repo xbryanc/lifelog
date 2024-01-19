@@ -6,7 +6,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "nodemon server/app.ts",
-    "dev": "webpack-dev-server --config ./webpack.config.js --mode development --port 4999"
+    "dev": "webpack-dev-server --config ./webpack.config.js --mode development --port 4999",
+    "prod": "forever start -v -c ts-node server/app.ts"
   },
   "repository": {
     "type": "git",
