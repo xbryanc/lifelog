@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import _ from "lodash";
 
 import clsx from "clsx";
@@ -29,6 +29,7 @@ const Goal: React.FC<GoalProps> = ({
   const [description, setDescription] = useState(goal.description);
 
   const [editing, setEditing] = useState(isIncomplete);
+  const editingRef = useRef(editing);
   const [editName, setEditName] = useState(name);
   const [editDescription, setEditDescription] = useState(description);
 
@@ -45,13 +46,14 @@ const Goal: React.FC<GoalProps> = ({
       incrementEdits(); // to counteract below on initialization
     }
     return () => {
-      if (editing) {
+      if (editingRef.current) {
         decrementEdits();
       }
     };
   }, []);
 
   useEffect(() => {
+    editingRef.current = editing;
     if (editing) {
       incrementEdits();
     } else {

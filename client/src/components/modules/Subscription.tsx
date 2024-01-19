@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 // @ts-ignore
 import Calendar from "react-calendar";
 import _ from "lodash";
@@ -45,6 +45,7 @@ const Subscription: React.FC<SubscriptionProps> = ({
   const [description, setDescription] = useState(subscription.description);
   const [tags, setTags] = useState(subscription.tags);
   const [editing, setEditing] = useState(isIncomplete);
+  const editingRef = useRef(editing);
   const [editCost, setEditCost] = useState(cost);
   const [editLocation, setEditLocation] = useState(location);
   const [editDescription, setEditDescription] = useState(description);
@@ -72,13 +73,14 @@ const Subscription: React.FC<SubscriptionProps> = ({
       incrementEdits(); // to counteract below on initialization
     }
     return () => {
-      if (editing) {
+      if (editingRef.current) {
         decrementEdits();
       }
     };
   }, []);
 
   useEffect(() => {
+    editingRef.current = editing;
     if (editing) {
       incrementEdits();
     } else {

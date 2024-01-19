@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import _ from "lodash";
 import clsx from "clsx";
 
@@ -32,6 +32,7 @@ const Transaction: React.FC<TransactionProps> = ({
   const [location, setLocation] = useState(transaction.location);
   const [tags, setTags] = useState(transaction.tags);
   const [editing, setEditing] = useState(isIncomplete);
+  const editingRef = useRef(editing);
   const [editCost, setEditCost] = useState(cost);
   const [editDescription, setEditDescription] = useState(description);
   const [editLocation, setEditLocation] = useState(location);
@@ -41,13 +42,14 @@ const Transaction: React.FC<TransactionProps> = ({
       incrementEdits(); // to counteract below on initialization
     }
     return () => {
-      if (editing) {
+      if (editingRef.current) {
         decrementEdits();
       }
     };
   }, []);
 
   useEffect(() => {
+    editingRef.current = editing;
     if (editing) {
       incrementEdits();
     } else {
