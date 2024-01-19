@@ -8,6 +8,7 @@ let db: mongoose.Connection | null = null;
 if (mongoURL) {
   const options = {
     useNewUrlParser: true,
+    server: { socketOptions: { connectTimeoutMS: 60 * 1000 }},
   };
   mongoose.connect(mongoURL, options);
   mongoose.Promise = global.Promise;
