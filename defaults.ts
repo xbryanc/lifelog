@@ -73,6 +73,7 @@ export interface User {
   tags: string[];
   subscriptions: Subscription[];
   goals: GoalsList;
+  friends: Friend[];
 }
 
 export type FinanceLog = Record<string, Transaction[]>;
@@ -113,6 +114,11 @@ export enum GoalStatus {
   FAILED = "failed",
   PASSED = "passed",
   IN_PROGRESS = "in progress",
+}
+
+export interface Friend {
+  name: string;
+  lastUpdated: string;
 }
 
 export enum SubscriptionFrequency {
@@ -169,6 +175,13 @@ export const EMPTY_GOAL: Goal = Object.freeze({
   description: "",
   status: GoalStatus.IN_PROGRESS,
 });
+
+export const EPOCH = new Date("1970-01-01");
+
+export const NEW_FRIEND: Friend = Object.freeze({
+  name: "",
+  lastUpdated: EPOCH.toLocaleDateString(),
+})
 
 export const STAR_MAX = 10;
 export const INF = 1e18; // large number

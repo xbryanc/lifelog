@@ -8,7 +8,9 @@ import { PieChart } from "react-minimal-pie-chart";
 import {
   EMPTY_GOAL,
   EMPTY_SUBSCRIPTION,
+  NEW_FRIEND,
   FinanceLog,
+  Friend,
   Goal,
   GoalStatus,
   MISC_TAG,
@@ -22,9 +24,11 @@ import {
   subApplies,
   subtractPreset,
   toGoalsKey,
+  stripId,
 } from "../../../../helpers";
 import SubscriptionComponent from "../modules/Subscription";
 import GoalComponent from "../modules/Goal";
+import FriendComponent from "../modules/Friend";
 import { makeStyles, theme } from "../../theme";
 
 interface ProfileProps {
@@ -69,8 +73,28 @@ const Profile: React.FC<ProfileProps> = ({ userInfo }) => {
     toGoalsKey(new Date(Date.now()).toLocaleDateString())
   );
   const [goals, setGoals] = useState(_.cloneDeep(userInfo.goals));
-  const [subsChanged, setSubsChanged] = useState(0);
-  const [goalsChanged, setGoalsChanged] = useState(0);
+  const [friends, setFriends] = useState(_.cloneDeep(userInfo.friends).sort((friendA, friendB) => {
+    const dateA = new Date(friendA.lastUpdated);
+    const dateB = new Date(friendB.lastUpdated);
+    return dateA > dateB ? -1 : 1;
+  }));
+
+  const [editCounts, setEditCounts] = useState(0);
+
+  const subsChanged = useMemo(
+    () => !_.isEqual(subscriptions.map(stripId), userInfo.subscriptions.map(stripId)),
+    [subscriptions, userInfo.subscriptions]
+  )
+
+  const goalsChanged = useMemo(
+    () => !_.isEqual(goals, userInfo.goals),
+    [goals, userInfo.goals]
+  );
+
+  const friendsChanged = useMemo(
+    () => !_.isEqual(friends.map(stripId), userInfo.friends.map(stripId)),
+    [friends, userInfo.friends]
+  );
 
   useEffect(() => {
     document.title = "Profile";
@@ -215,6 +239,25 @@ const Profile: React.FC<ProfileProps> = ({ userInfo }) => {
     setGoals(newGoals);
   };
 
+  const addFriend = () => {
+    const newFriends = _.cloneDeep(friends);
+    const newFriend = _.cloneDeep(NEW_FRIEND);
+    newFriends.push(newFriend);
+    setFriends(newFriends);
+  }
+
+  const deleteFriend = (ind: number) => {
+    const newFriends = _.cloneDeep(friends);
+    newFriends.splice(ind, 1);
+    setFriends(newFriends);
+  }
+
+  const editFriend = (ind: number, newFriend: Friend) => {
+    const newFriends = _.cloneDeep(friends);
+    newFriends[ind] = newFriend;
+    setFriends(newFriends);
+  }
+
   const moveGoalsKey = (diff: number) => {
     const [year, quarter] = goalsKey.split("-");
     const rawValue = Number.parseInt(year) * 4 + Number.parseInt(quarter);
@@ -259,12 +302,13 @@ const Profile: React.FC<ProfileProps> = ({ userInfo }) => {
   };
 
   const saveProfile = () => {
-    if (subsChanged || goalsChanged) {
+    if (editCounts) {
       return;
     }
     const body = {
       subscriptions,
       goals,
+      friends,
     };
     fetch("/api/save_profile", {
       method: "POST",
@@ -380,18 +424,10 @@ const Profile: React.FC<ProfileProps> = ({ userInfo }) => {
               editSubscription={(s: Subscription) => editSub(ind, s)}
               deleteSubscription={() => deleteSub(ind)}
               selectedTag={selectedTag}
-              incrementEdits={() => setSubsChanged((sc) => sc + 1)}
-              decrementEdits={() => setSubsChanged((sc) => sc - 1)}
+              incrementEdits={() => setEditCounts((ec) => ec + 1)}
+              decrementEdits={() => setEditCounts((ec) => ec - 1)}
             />
           ))}
-        </div>
-        <div
-          className={clsx(classes.button, {
-            disabled: subsChanged || goalsChanged,
-          })}
-          onClick={saveProfile}
-        >
-          Save
         </div>
       </div>
       <div className={classes.goalContainer}>
@@ -432,20 +468,48 @@ const Profile: React.FC<ProfileProps> = ({ userInfo }) => {
               editGoal={(g: Goal) => editGoal(ind, g)}
               deleteGoal={() => deleteGoal(ind)}
               cycleStatus={() => cycleGoalStatus(ind)}
-              incrementEdits={() => setGoalsChanged((gc) => gc + 1)}
-              decrementEdits={() => setGoalsChanged((gc) => gc - 1)}
+              incrementEdits={() => setEditCounts((ec) => ec + 1)}
+              decrementEdits={() => setEditCounts((ec) => ec - 1)}
             />
           ))}
         </div>
-        <div
-          className={clsx(classes.button, {
-            disabled: subsChanged || goalsChanged,
+      </div>
+      <div className={classes.friendContainer}>
+        <div className={classes.friendTitle}>
+          <div className={classes.friendTitleMain}>
+            FRIENDS
+            {!!friendsChanged ? <div className={classes.changed}>*</div> : null}
+          </div>
+          <div className={classes.friendTitleSecondary}>
+            <div
+              className={clsx(classes.smallButton, "text green")}
+              onClick={addFriend}
+            >
+              +
+            </div>
+          </div>
+        </div>
+        <div>
+          {friends.map((el, ind) => (
+            <FriendComponent
+              key={`${ind}`}
+              friend={el}
+              editFriend={(f: Friend) => editFriend(ind, f)}
+              deleteFriend={() => deleteFriend(ind)}
+              incrementEdits={() => setEditCounts((ec) => ec + 1)}
+              decrementEdits={() => setEditCounts((ec) => ec - 1)}
+            />
+          ))}
+        </div>
+      </div>
+      <div
+          className={clsx(classes.saveContainer, classes.button, {
+            disabled: !!editCounts,
           })}
           onClick={saveProfile}
         >
           Save
         </div>
-      </div>
       <div className={classes.chartContainer}>
         <div className={classes.chartHeader}>
           <div
@@ -600,6 +664,10 @@ const useStyles = makeStyles((theme) => ({
     margin: "0 5px",
     cursor: "pointer",
   },
+  saveContainer: {
+    width: "80%",
+    margin: "5px",
+  },
   chartContainer: {
     border: "1px solid black",
     borderRadius: "5px",
@@ -690,6 +758,30 @@ const useStyles = makeStyles((theme) => ({
     width: "10px",
   },
   goalTitleSecondary: {
+    display: "flex",
+    flexDirection: "row",
+    gap: "4px",
+    alignItems: "center",
+  },
+  friendContainer: {
+    border: "1px solid black",
+    borderRadius: "5px",
+    padding: "5px",
+    width: "80%",
+    marginTop: theme.spacing(1),
+    marginBottom: theme.spacing(1),
+  },
+  friendTitle: {
+    display: "flex",
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  friendTitleMain: {
+    display: "flex",
+    flexDirection: "row",
+    width: "10px",
+  },
+  friendTitleSecondary: {
     display: "flex",
     flexDirection: "row",
     gap: "4px",

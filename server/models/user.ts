@@ -1,6 +1,6 @@
 // import node modules
 import mongoose, { Document, Types, Model, Schema } from "mongoose";
-import { ExtractStatics, Subscription, GoalsList } from "../../defaults";
+import { ExtractStatics, Subscription, GoalsList, Friend } from "../../defaults";
 
 export interface IUser extends Document, UserModel {
   _id: Types.ObjectId;
@@ -9,6 +9,7 @@ export interface IUser extends Document, UserModel {
   tags: string[];
   subscriptions: Subscription[];
   goals: GoalsList;
+  friends: Friend[];
 }
 
 export class UserModel {
@@ -52,6 +53,10 @@ const schema: Schema<IUser, IUserModel> = new mongoose.Schema(
       type: Object,
       default: {},
     },
+    friends: [{
+      name: String,
+      lastUpdated: String,
+    }],
   },
   { minimize: false }
 );

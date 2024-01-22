@@ -2,44 +2,40 @@ import React, { useState, useEffect, useRef } from "react";
 import _ from "lodash";
 
 import clsx from "clsx";
-import { Goal, GoalStatus } from "../../../../defaults";
+import { Friend } from "../../../../defaults";
 import { makeStyles } from "../../theme";
 
-interface GoalProps {
-  goal: Goal;
-  editGoal: (g: Goal) => void;
-  deleteGoal: () => void;
-  cycleStatus: () => void;
+interface FriendProps {
+  friend: Friend;
+  editFriend: (f: Friend) => void;
+  deleteFriend: () => void;
   incrementEdits: () => void;
   decrementEdits: () => void;
 }
 
-const Goal: React.FC<GoalProps> = ({
-  goal,
-  editGoal,
-  deleteGoal,
-  cycleStatus,
+const Friend: React.FC<FriendProps> = ({
+  friend,
+  editFriend,
+  deleteFriend,
   incrementEdits,
   decrementEdits,
 }) => {
   const classes = useStyles();
-  const isIncomplete = !goal.name || !goal.description;
+  const isIncomplete = !friend.name;
   const [show, setShow] = useState(isIncomplete);
-  const [name, setName] = useState(goal.name);
-  const [description, setDescription] = useState(goal.description);
+  const [name, setName] = useState(friend.name);
+  const [lastUpdated, setLastUpdated] = useState(friend.lastUpdated);
 
   const [editing, setEditing] = useState(isIncomplete);
   const editingRef = useRef(editing);
   const [editName, setEditName] = useState(name);
-  const [editDescription, setEditDescription] = useState(description);
 
   useEffect(() => {
-    editGoal({
+    editFriend({
       name,
-      description,
-      status: goal.status,
+      lastUpdated,
     });
-  }, [name, description]);
+  }, [name, lastUpdated]);
 
   useEffect(() => {
     if (!editing) {
@@ -61,24 +57,19 @@ const Goal: React.FC<GoalProps> = ({
     }
   }, [editing]);
 
-  const startGoalEdit = () => {
+  const startFriendEdit = () => {
     setEditing(true);
     setEditName(name);
-    setEditDescription(description);
   };
 
-  const commitGoalEdit = () => {
+  const commitFriendEdit = () => {
     setEditing(false);
     setName(editName);
-    setDescription(editDescription);
   };
 
   return (
     <div
-      className={clsx(classes.entry, {
-        passed: goal.status === GoalStatus.PASSED,
-        failed: goal.status === GoalStatus.FAILED,
-      })}
+      className={classes.entry}
     >
       <div className={classes.header}>
         <div className={classes.name} onClick={() => setShow(!show)}>
@@ -96,41 +87,28 @@ const Goal: React.FC<GoalProps> = ({
             name
           )}
         </div>
+        <div className={classes.lastUpdated}>
+          {lastUpdated}
+        </div>
         <div className={classes.icons}>
           <img
             className={clsx(classes.smallButton, classes.buttonPicture)}
-            onClick={cycleStatus}
+            onClick={() => setLastUpdated(new Date(Date.now()).toLocaleDateString())}
             src={"/media/refresh.svg"}
           />
           <img
             className={clsx(classes.smallButton, classes.buttonPicture)}
-            onClick={editing ? commitGoalEdit : startGoalEdit}
+            onClick={editing ? commitFriendEdit : startFriendEdit}
             src={editing ? "/media/check.svg" : "/media/pencil.svg"}
           />
           <div
             className={clsx(classes.smallButton, "text red")}
-            onClick={deleteGoal}
+            onClick={deleteFriend}
           >
             x
           </div>
         </div>
       </div>
-      {show ? (
-        <div className={classes.body}>
-          {editing ? (
-            <textarea
-              className={classes.editDescription}
-              name="goalDescriptionEntry"
-              id="goalDescriptionEntry"
-              value={editDescription}
-              onChange={(e) => setEditDescription(e.target.value)}
-              onClick={(e) => e.stopPropagation()}
-            />
-          ) : (
-            description
-          )}
-        </div>
-      ) : null}
     </div>
   );
 };
@@ -173,16 +151,17 @@ const useStyles = makeStyles((theme) => ({
     border: "1px solid black",
     borderRadius: "5px",
     marginTop: "3px",
-    "&.passed": {
-      backgroundColor: theme.colors.green400,
-    },
-    "&.failed": {
-      backgroundColor: theme.colors.orange,
-    },
   },
   body: {
     padding: "5px 10px",
     borderBottom: "1px solid black",
+  },
+  lastUpdated: {
+    flexGrow: 0,
+    padding: "5px",
+    display: "flex",
+    flexDirection: "row",
+    justifyContent: "center",
   },
   icons: {
     flexGrow: 0,
@@ -199,4 +178,4 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-export default Goal;
+export default Friend;

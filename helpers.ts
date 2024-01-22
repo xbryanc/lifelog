@@ -1,4 +1,5 @@
 import { Span, Subscription, SubscriptionFrequency } from "./defaults";
+import _ from 'lodash';
 
 export const sortByDate = (a: string, b: string) => {
   const dateA = new Date(a);
@@ -12,6 +13,8 @@ export const toGoalsKey = (selectedDate: string) => {
   const month = curDate.getMonth();
   return `${year}-${Math.floor(month / 3)}`;
 };
+
+export const stripId = (obj: Object): Object => _.omit(obj, '_id');
 
 export const subApplies = (sub: Subscription, selectedDate: string | Date) => {
   const curDate = new Date(selectedDate);

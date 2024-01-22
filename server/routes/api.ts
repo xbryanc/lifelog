@@ -126,7 +126,7 @@ router.post("/save_info", connect.ensureLoggedIn(), async (req, res) => {
 router.post("/save_profile", connect.ensureLoggedIn(), async (req, res) => {
   await User.updateOne(
     { _id: req.user._id },
-    { subscriptions: req.body.subscriptions, goals: req.body.goals }
+    { subscriptions: req.body.subscriptions, goals: req.body.goals, friends: req.body.friends }
   );
   return res.status(200).json({});
 });
