@@ -98,12 +98,12 @@ const Goal: React.FC<GoalProps> = ({
         </div>
         <div className={classes.icons}>
           <img
-            className={clsx(classes.smallButton, classes.buttonPicture)}
+            className={clsx(classes.smallButton, "picture")}
             onClick={cycleStatus}
             src={"/media/refresh.svg"}
           />
           <img
-            className={clsx(classes.smallButton, classes.buttonPicture)}
+            className={clsx(classes.smallButton, "picture")}
             onClick={editing ? commitGoalEdit : startGoalEdit}
             src={editing ? "/media/check.svg" : "/media/pencil.svg"}
           />
@@ -151,9 +151,9 @@ const useStyles = makeStyles((theme) => ({
     "&.green": {
       color: theme.colors.green,
     },
-  },
-  buttonPicture: {
-    width: "30px",
+    "&.picture": {
+      width: "30px",
+    },
   },
   header: {
     display: "flex",

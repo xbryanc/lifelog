@@ -13,6 +13,7 @@ import {
 import { makeStyles, theme } from "../../theme";
 
 interface SubscriptionProps {
+  odd: boolean;
   highlight?: boolean;
   subscription: Subscription;
   editSubscription: (s: Subscription) => void;
@@ -23,6 +24,7 @@ interface SubscriptionProps {
 }
 
 const Subscription: React.FC<SubscriptionProps> = ({
+  odd,
   highlight,
   subscription,
   editSubscription,
@@ -139,11 +141,7 @@ const Subscription: React.FC<SubscriptionProps> = ({
   };
 
   return (
-    <div
-      className={clsx(classes.entry, {
-        highlight: !!highlight,
-      })}
-    >
+    <div className={clsx(classes.entry, { odd: odd && !editing, highlight: !!highlight && !editing })}>
       {!showSelect ? null : (
         <div className={classes.selectContainer} onClick={commitDate}>
           <div
@@ -273,7 +271,7 @@ const Subscription: React.FC<SubscriptionProps> = ({
         </div>
         <div className={classes.icons}>
           <img
-            className={clsx(classes.smallButton, classes.buttonPicture)}
+            className={clsx(classes.smallButton, "picture")}
             onClick={editing ? commitSubEdit : startSubEdit}
             src={editing ? "/media/check.svg" : "/media/pencil.svg"}
           />
@@ -349,9 +347,15 @@ const useStyles = makeStyles((theme) => ({
     border: "1px solid black",
     borderRadius: "5px",
     marginTop: "3px",
+    "&.odd": {
+      backgroundColor: theme.colors.coolGray20,
+    },
     "&.highlight": {
       backgroundColor: theme.colors.periwinkle50,
     },
+    "&.odd.highlight": {
+      backgroundColor: theme.colors.periwinkle75,
+    }
   },
   body: {
     padding: "5px 10px",
@@ -464,9 +468,9 @@ const useStyles = makeStyles((theme) => ({
     "&.green": {
       color: theme.colors.green,
     },
-  },
-  buttonPicture: {
-    width: "30px",
+    "&.picture": {
+      width: "30px",
+    },
   },
 }));
 

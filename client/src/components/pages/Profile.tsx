@@ -420,6 +420,7 @@ const Profile: React.FC<ProfileProps> = ({ userInfo }) => {
         <div>
           {subscriptions.map((el, ind) => (
             <SubscriptionComponent
+              odd={ind % 2 == 1}
               key={ind}
               subscription={el}
               editSubscription={(s: Subscription) => editSub(ind, s)}
@@ -493,6 +494,7 @@ const Profile: React.FC<ProfileProps> = ({ userInfo }) => {
         <div>
           {friends.map((el, ind) => (
             <FriendComponent
+              odd={ind % 2 == 1}
               key={ind}
               friend={el}
               editFriend={(f: Friend) => editFriend(ind, f)}

@@ -7,6 +7,7 @@ import { formatCost } from "../../../../helpers";
 import { makeStyles } from "../../theme";
 
 interface TransactionProps {
+  odd: boolean;
   transaction: Transaction;
   editTransaction: (t: Transaction) => void;
   deleteTransaction: () => void;
@@ -16,6 +17,7 @@ interface TransactionProps {
 }
 
 const Transaction: React.FC<TransactionProps> = ({
+  odd,
   transaction,
   editTransaction,
   deleteTransaction,
@@ -91,7 +93,9 @@ const Transaction: React.FC<TransactionProps> = ({
   };
 
   return (
-    <div className={classes.container}>
+    <div className={clsx(classes.container, {
+      odd: odd && !editing,
+    })}>
       <div className={classes.header}>
         <div className={classes.location} onClick={handleClick}>
           {editing ? (
@@ -137,7 +141,7 @@ const Transaction: React.FC<TransactionProps> = ({
         </div>
         <div className={classes.icons}>
           <img
-            className={clsx(classes.smallButton, classes.buttonPicture)}
+            className={clsx(classes.smallButton, "picture")}
             onClick={editing ? commitTransactionEdit : startTransactionEdit}
             src={editing ? "/media/check.svg" : "/media/pencil.svg"}
           />
@@ -185,23 +189,23 @@ const useStyles = makeStyles((theme) => ({
     "&.green": {
       color: theme.colors.green,
     },
-  },
-  buttonPicture: {
-    width: "30px",
+    "&.picture": {
+      width: "30px",
+    },
   },
   container: {
     border: "1px solid black",
     borderRadius: "5px",
     marginTop: "3px",
+    "&.odd": {
+      backgroundColor: theme.colors.coolGray20,
+    },
   },
   header: {
     display: "flex",
     flexDirection: "row",
     borderBottom: "1px solid black",
     padding: "0px 3px",
-  },
-  headerSub: {
-    backgroundColor: theme.colors.periwinkle25,
   },
   location: {
     cursor: "pointer",

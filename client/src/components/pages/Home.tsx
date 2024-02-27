@@ -616,10 +616,7 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
                     </div>
                     <div className={classes.finTagIcons}>
                       <img
-                        className={clsx(
-                          classes.smallButton,
-                          classes.buttonPicture
-                        )}
+                        className={clsx(classes.smallButton, "picture")}
                         onClick={
                           editing
                             ? () => changeTag(el, false)
@@ -679,6 +676,7 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
                 !subApplies(sub, selectedDate) ? null : (
                   <SubscriptionComponent
                     key={mkk([selectedDate, ind, sub])}
+                    odd={ind % 2 == 1}
                     highlight
                     subscription={sub}
                     editSubscription={(s: Subscription) => editSub(ind, s)}
@@ -692,6 +690,7 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
               {transactions.map((el, ind) => (
                 <TransactionComponent
                   key={mkk([selectedDate, ind, el])}
+                  odd={(ind + subscriptions.length) % 2 == 1}
                   transaction={el}
                   editTransaction={(t: Transaction) => editTransaction(ind, t)}
                   deleteTransaction={() => deleteTransaction(ind)}
@@ -750,9 +749,9 @@ const useStyles = makeStyles((theme) => ({
     "&.green": {
       color: theme.colors.green,
     },
-  },
-  buttonPicture: {
-    width: "30px",
+    "&.picture": {
+      width: "30px",
+    },
   },
   homeContainer: {
     display: "flex",

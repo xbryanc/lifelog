@@ -6,6 +6,7 @@ import { Friend } from "../../../../defaults";
 import { makeStyles } from "../../theme";
 
 interface FriendProps {
+  odd: boolean;
   friend: Friend;
   editFriend: (f: Friend) => void;
   deleteFriend: () => void;
@@ -14,6 +15,7 @@ interface FriendProps {
 }
 
 const Friend: React.FC<FriendProps> = ({
+  odd,
   friend,
   editFriend,
   deleteFriend,
@@ -68,9 +70,7 @@ const Friend: React.FC<FriendProps> = ({
   };
 
   return (
-    <div
-      className={classes.entry}
-    >
+    <div className={clsx(classes.entry, { odd: odd && !editing} )}>
       <div className={classes.header}>
         <div className={classes.name} onClick={() => setShow(!show)}>
           {editing ? (
@@ -92,12 +92,12 @@ const Friend: React.FC<FriendProps> = ({
         </div>
         <div className={classes.icons}>
           <img
-            className={clsx(classes.smallButton, classes.buttonPicture)}
+            className={clsx(classes.smallButton, "picture")}
             onClick={() => setLastUpdated(new Date(Date.now()).toLocaleDateString())}
             src={"/media/refresh.svg"}
           />
           <img
-            className={clsx(classes.smallButton, classes.buttonPicture)}
+            className={clsx(classes.smallButton, "picture")}
             onClick={editing ? commitFriendEdit : startFriendEdit}
             src={editing ? "/media/check.svg" : "/media/pencil.svg"}
           />
@@ -129,9 +129,9 @@ const useStyles = makeStyles((theme) => ({
     "&.green": {
       color: theme.colors.green,
     },
-  },
-  buttonPicture: {
-    width: "30px",
+    "&.picture": {
+      width: "30px",
+    },
   },
   header: {
     display: "flex",
@@ -151,6 +151,9 @@ const useStyles = makeStyles((theme) => ({
     border: "1px solid black",
     borderRadius: "5px",
     marginTop: "3px",
+    "&.odd": {
+      backgroundColor: theme.colors.coolGray20,
+    },
   },
   body: {
     padding: "5px 10px",
