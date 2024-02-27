@@ -19,6 +19,7 @@ import {
   User,
 } from "../../../../defaults";
 import {
+  mkk,
   colorForKey,
   formatCost,
   subApplies,
@@ -463,7 +464,7 @@ const Profile: React.FC<ProfileProps> = ({ userInfo }) => {
         <div>
           {(goals[goalsKey] || []).map((el, ind) => (
             <GoalComponent
-              key={`${goalsKey}_${ind}`}
+              key={mkk([goalsKey, ind, el])}
               goal={el}
               editGoal={(g: Goal) => editGoal(ind, g)}
               deleteGoal={() => deleteGoal(ind)}
@@ -492,7 +493,7 @@ const Profile: React.FC<ProfileProps> = ({ userInfo }) => {
         <div>
           {friends.map((el, ind) => (
             <FriendComponent
-              key={`${ind}`}
+              key={ind}
               friend={el}
               editFriend={(f: Friend) => editFriend(ind, f)}
               deleteFriend={() => deleteFriend(ind)}
@@ -553,7 +554,7 @@ const Profile: React.FC<ProfileProps> = ({ userInfo }) => {
               <div>
                 {pieData.map((el) => (
                   <div
-                    key={`${el.title}_${el.value}`}
+                    key={mkk([el.title, el.value])}
                     className={clsx({
                       [classes.chartHoverKey]: el.title === curKey,
                     })}
@@ -563,9 +564,9 @@ const Profile: React.FC<ProfileProps> = ({ userInfo }) => {
                 ))}
               </div>
               <div className={classes.chartTransactions}>
-                {curTransactions.map((transaction) => (
+                {curTransactions.map((transaction, ind) => (
                   <div
-                    key={`${transaction.location}_${transaction.cost}_${transaction.date}`}
+                    key={mkk([ind, transaction])}
                   >
                     {transaction.date} - {transaction.location}:{" "}
                     {formatCost(transaction.cost)}

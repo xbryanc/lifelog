@@ -1,6 +1,8 @@
 import { Span, Subscription, SubscriptionFrequency } from "./defaults";
 import _ from 'lodash';
 
+export const mkk = (tags: any[]) => strhash(JSON.stringify(tags));
+
 export const sortByDate = (a: string, b: string) => {
   const dateA = new Date(a);
   const dateB = new Date(b);
@@ -79,15 +81,7 @@ export const formatSubTime = (date: string) => {
 };
 
 export const colorForKey = (key: string) => {
-  function djb2(str: string) {
-    let hash = 5381;
-    for (let i = 0; i < str.length; i++) {
-      hash = (hash << 5) + hash + str.charCodeAt(i); /* hash * 33 + c */
-    }
-    return hash;
-  }
-
-  const hash = djb2(key);
+  const hash = strhash(key);
   const r = (hash & 0xff0000) >> 16;
   const g = (hash & 0x00ff00) >> 8;
   const b = hash & 0x0000ff;
@@ -98,3 +92,11 @@ export const colorForKey = (key: string) => {
     ("0" + b.toString(16)).substr(-2)
   );
 };
+
+const strhash = (str: string) => {
+  let hash = 5381;
+  for (let i = 0; i < str.length; i++) {
+    hash = (hash << 5) + hash + str.charCodeAt(i); /* hash * 33 + c */
+  }
+  return hash;
+}

@@ -14,7 +14,7 @@ import {
   Diary,
   FinanceLog,
 } from "../../../../defaults";
-import { subApplies, sortByDate } from "../../../../helpers";
+import { mkk, subApplies, sortByDate } from "../../../../helpers";
 import TransactionComponent from "../modules/Transaction";
 import SubscriptionComponent from "../modules/Subscription";
 import { makeStyles, theme } from "../../theme";
@@ -678,7 +678,7 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
               {subscriptions.map((sub, ind) =>
                 !subApplies(sub, selectedDate) ? null : (
                   <SubscriptionComponent
-                    key={`${selectedDate}_${ind}`}
+                    key={mkk([selectedDate, ind, sub])}
                     highlight
                     subscription={sub}
                     editSubscription={(s: Subscription) => editSub(ind, s)}
@@ -691,7 +691,7 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
               )}
               {transactions.map((el, ind) => (
                 <TransactionComponent
-                  key={`${selectedDate}_${ind}`}
+                  key={mkk([selectedDate, ind, el])}
                   transaction={el}
                   editTransaction={(t: Transaction) => editTransaction(ind, t)}
                   deleteTransaction={() => deleteTransaction(ind)}
