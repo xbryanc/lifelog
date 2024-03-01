@@ -29,6 +29,7 @@ export interface Log {
   rating: number;
   productivity: number;
   description: string;
+  revised?: boolean;
 }
 
 export interface Subscription {

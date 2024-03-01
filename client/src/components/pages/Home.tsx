@@ -64,6 +64,10 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
   const [displayProductivity, setDisplayProductivity] = useState(
     diary[new Date(Date.now()).toLocaleDateString()]?.productivity ?? 0
   );
+  const [revised, setRevised] = useState(
+    !!diary[new Date(Date.now()).toLocaleDateString()]?.revised
+  );
+  const [refresherDate, setRefresherDate] = useState<string | undefined>(undefined);
   const [changeSet, setChangeSet] = useState<string[]>([]);
   const [incompleteDates, setIncompleteDates] = useState<string[]>([]);
 
@@ -152,6 +156,9 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
       const year = _.last(selectedDate.split("/"));
       const { diary: newDiary } = await fetchYear(year);
       calendarChange(selectedDate, newDiary);
+      if (selectedDate === refresherDate) {
+        setRevised(true);
+      }
     })();
   }, [selectedDate]);
 
@@ -176,6 +183,11 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
     }
     setIncompleteDates(newIncompleteDates.sort(sortByDate));
   };
+
+  const fetchNewRefresherDate = async () => {
+    const newRefresherDate = await (await fetch("/api/lookback")).json();
+    setRefresherDate(newRefresherDate.refresherDate);
+  }
 
   const search = async () => {
     const { diary, finance } = await fetchAllYears();
@@ -357,15 +369,21 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
   const calendarChange = (date: string, overrideDiary?: Diary) => {
     const refDiary = overrideDiary ?? diary;
     if (_.hasIn(refDiary, date)) {
-      const { rating, description } = refDiary[date];
+      const { rating, description, productivity, revised } = refDiary[date];
       setSelectedDate(date);
       setDisplayRating(rating);
       setRating(rating);
+      setDisplayProductivity(productivity);
+      setProductivity(productivity);
+      setRevised(revised);
       setDiaryText(description);
     } else {
       setSelectedDate(date);
       setDisplayRating(0);
       setRating(0);
+      setDisplayProductivity(0);
+      setProductivity(0);
+      setRevised(false);
       setDiaryText("");
     }
   };
@@ -373,9 +391,10 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
   const updateDiary = (text: string, rating: number, productivity: number) => {
     const newDiary = _.cloneDeep(diary);
     newDiary[selectedDate] = {
-      description: diaryText,
+      description: text,
       rating,
       productivity,
+      revised,
     };
     setDiary(newDiary);
     setDiaryText(text);
@@ -561,6 +580,25 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
           </div>
           <div className={classes.diaryHeader}>
             {selectedDate}
+            <div className={classes.refresherHeader}>
+              {!!refresherDate ? (
+                <div
+                  className={clsx(classes.simpleButton, classes.homeDate)}
+                  onClick={() => calendarChange(refresherDate)}
+                >
+                  {refresherDate}
+                </div>
+              ) : (
+                <div>
+                  Click for refresher:
+                </div>
+              )}
+              <img
+                className={clsx(classes.smallButton, "picture")}
+                onClick={fetchNewRefresherDate}
+                src={"/media/refresh.svg"}
+              />
+            </div>
             <div
               className={classes.changeContainer}
               onMouseEnter={() => setHoverDetails(true)}
@@ -818,6 +856,12 @@ const useStyles = makeStyles((theme) => ({
     flexDirection: "row",
     justifyContent: "space-between",
     fontSize: 20,
+  },
+  refresherHeader: {
+    display: "flex",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: theme.spacing(1),
   },
   ratingContainer: {
     display: "flex",
