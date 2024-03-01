@@ -484,8 +484,12 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
             const classNames: string[] = [];
             if (properties.view === "month" && _.hasIn(diary, dateKey)) {
               const ratings = _.filter([diary[dateKey].rating, diary[dateKey].productivity], num => !!num);
-              const geometricRating = Math.pow(_.reduce(ratings, (prod, num) => prod * num, 1), 1 / ratings.length);
-              classNames.push(classes[`rating${Math.round(geometricRating)}` as keyof typeof classes]);
+              if (!ratings.length) {
+                classNames.push(classes.rating0);
+              } else {
+                const geometricRating = Math.pow(_.reduce(ratings, (prod, num) => prod * num, 1), 1 / ratings.length);
+                classNames.push(classes[`rating${Math.round(geometricRating)}` as keyof typeof classes]);
+              }
             } else {
               classNames.push(classes.calendarCell);
             }
@@ -583,7 +587,7 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
               )}
             </div>
           </div>
-          <div className={classes.diaryHeader}>
+          <div className={classes.ratingContainer}>
             <div>
               RATING: {createRatingStars()}
             </div>
@@ -813,6 +817,12 @@ const useStyles = makeStyles((theme) => ({
     display: "flex",
     flexDirection: "row",
     justifyContent: "space-between",
+    fontSize: 20,
+  },
+  ratingContainer: {
+    display: "flex",
+    flexDirection: "row",
+    justifyContent: "space-between",
   },
   finHeader: {
     display: "flex",
@@ -891,7 +901,6 @@ const useStyles = makeStyles((theme) => ({
     position: "relative",
     display: "inline-block",
     flexGrow: 0,
-    fontSize: "20px",
     textAlign: "right",
     borderBottom: "1px dotted black",
     marginBottom: "5px",
