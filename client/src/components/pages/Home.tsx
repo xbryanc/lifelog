@@ -373,8 +373,8 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
       setSelectedDate(date);
       setDisplayRating(rating);
       setRating(rating);
-      setDisplayProductivity(productivity);
-      setProductivity(productivity);
+      setDisplayProductivity(productivity ?? 0);
+      setProductivity(productivity ?? 0);
       setRevised(revised);
       setDiaryText(description);
     } else {
