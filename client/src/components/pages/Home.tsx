@@ -18,6 +18,8 @@ import { subApplies, sortByDate } from "../../../../helpers";
 import TransactionComponent from "../modules/Transaction";
 import SubscriptionComponent from "../modules/Subscription";
 import { makeStyles, theme } from "../../theme";
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faStar } from '@fortawesome/free-solid-svg-icons';
 
 interface HomeProps {
   userInfo: User;
@@ -55,6 +57,12 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
   );
   const [displayRating, setDisplayRating] = useState(
     diary[new Date(Date.now()).toLocaleDateString()]?.rating ?? 0
+  );
+  const [productivity, setProductivity] = useState(
+    diary[new Date(Date.now()).toLocaleDateString()]?.productivity ?? 0
+  );
+  const [displayProductivity, setDisplayProductivity] = useState(
+    diary[new Date(Date.now()).toLocaleDateString()]?.productivity ?? 0
   );
   const [changeSet, setChangeSet] = useState<string[]>([]);
   const [incompleteDates, setIncompleteDates] = useState<string[]>([]);
@@ -324,20 +332,27 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
     setSubscriptions(newSubscriptions);
   };
 
-  const createStars = () => {
-    const unfilled = "/media/star_light_unfilled.svg";
-    const filled = "/media/star_light_filled.svg";
-    return _.range(0, STAR_MAX).map((ind) => (
-      <img
-        key={ind}
-        className={classes.diaryStars}
-        src={ind < displayRating ? filled : unfilled}
-        onMouseEnter={() => setDisplayRating(ind + 1)}
-        onMouseLeave={() => setDisplayRating(rating)}
-        onClick={() => updateDiary(diaryText, rating === ind + 1 ? 0 : ind + 1)}
-      />
-    ));
-  };
+  const createRatingStars = () => _.range(0, STAR_MAX).map((ind) => (
+    <FontAwesomeIcon
+      key={ind}
+      icon={faStar}
+      className={clsx(classes.diaryStars, { red: ind < displayRating, faded: ind >= displayRating })}
+      onMouseEnter={() => setDisplayRating(ind + 1)}
+      onMouseLeave={() => setDisplayRating(rating)}
+      onClick={() => updateDiary(diaryText, rating === ind + 1 ? 0 : ind + 1, productivity)}
+    />
+  ));
+
+  const createProductivityStars = () => _.range(0, STAR_MAX).map((ind) => (
+    <FontAwesomeIcon
+      key={ind}
+      icon={faStar}
+      className={clsx(classes.diaryStars, { green: ind < displayProductivity, faded: ind >= displayProductivity })}
+      onMouseEnter={() => setDisplayProductivity(ind + 1)}
+      onMouseLeave={() => setDisplayProductivity(productivity)}
+      onClick={() => updateDiary(diaryText, rating, productivity === ind + 1 ? 0 : ind + 1)}
+    />
+  ));
 
   const calendarChange = (date: string, overrideDiary?: Diary) => {
     const refDiary = overrideDiary ?? diary;
@@ -355,16 +370,19 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
     }
   };
 
-  const updateDiary = (text: string, rating: number) => {
+  const updateDiary = (text: string, rating: number, productivity: number) => {
     const newDiary = _.cloneDeep(diary);
     newDiary[selectedDate] = {
-      description: text,
-      rating: rating,
+      description: diaryText,
+      rating,
+      productivity,
     };
     setDiary(newDiary);
     setDiaryText(text);
     setRating(rating);
     setDisplayRating(rating);
+    setProductivity(productivity);
+    setDisplayProductivity(productivity);
   };
 
   const saveBulk = () => {
@@ -376,9 +394,11 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
       const tokens = header.split(" ");
       const day = tokens[0];
       const rating = parseInt(tokens[1].substring(1));
+      const productivity = parseInt(tokens[2].substring(1));
       newDiary[day] = {
         description: body.join("\n"),
         rating,
+        productivity,
       };
     });
     setDiary(newDiary);
@@ -461,13 +481,14 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
           calendarType="US"
           tileClassName={(properties: any) => {
             const dateKey = properties.date.toLocaleDateString();
-            const classNames: string[] = [
-              properties.view === "month" && _.hasIn(diary, dateKey)
-                ? classes[
-                    `rating${diary[dateKey].rating}` as keyof typeof classes
-                  ]
-                : classes.calendarCell,
-            ];
+            const classNames: string[] = [];
+            if (properties.view === "month" && _.hasIn(diary, dateKey)) {
+              const ratings = _.filter([diary[dateKey].rating, diary[dateKey].productivity], num => !!num);
+              const geometricRating = Math.pow(_.reduce(ratings, (prod, num) => prod * num, 1), 1 / ratings.length);
+              classNames.push(classes[`rating${Math.round(geometricRating)}` as keyof typeof classes]);
+            } else {
+              classNames.push(classes.calendarCell);
+            }
             if (incompleteDates.includes(dateKey)) {
               classNames.push(classes.calendarIncomplete);
               if (hoverDetails) {
@@ -535,9 +556,7 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
             </div>
           </div>
           <div className={classes.diaryHeader}>
-            <div className={classes.starsContainer}>
-              {selectedDate}: {createStars()}
-            </div>
+            {selectedDate}
             <div
               className={classes.changeContainer}
               onMouseEnter={() => setHoverDetails(true)}
@@ -564,12 +583,20 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
               )}
             </div>
           </div>
+          <div className={classes.diaryHeader}>
+            <div>
+              RATING: {createRatingStars()}
+            </div>
+            <div>
+              PRODUCTIVITY: {createProductivityStars()}
+            </div>
+          </div>
           <textarea
             className={classes.diaryEntry}
             name="diaryEntry"
             id="diaryEntry"
             value={diaryText}
-            onChange={(e) => updateDiary(e.target.value, rating)}
+            onChange={(e) => updateDiary(e.target.value, rating, productivity)}
           />
           <div
             className={clsx(classes.button, {
@@ -785,6 +812,7 @@ const useStyles = makeStyles((theme) => ({
   diaryHeader: {
     display: "flex",
     flexDirection: "row",
+    justifyContent: "space-between",
   },
   finHeader: {
     display: "flex",
@@ -859,9 +887,6 @@ const useStyles = makeStyles((theme) => ({
     fontSize: "20px",
     color: "orange",
   },
-  starsContainer: {
-    flexGrow: 1,
-  },
   changeContainer: {
     position: "relative",
     display: "inline-block",
@@ -897,7 +922,16 @@ const useStyles = makeStyles((theme) => ({
     height: "50vh",
   },
   diaryStars: {
-    width: "2vw",
+    width: "1.5vw",
+    "&.red": {
+      color: theme.colors.red,
+    },
+    "&.green": {
+      color: theme.colors.green,
+    },
+    "&.faded": {
+      opacity: 0.2,
+    },
   },
   homeCalendar: {
     width: "70vw",

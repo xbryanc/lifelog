@@ -27,6 +27,7 @@ export type Diary = Record<string, Log>;
 
 export interface Log {
   rating: number;
+  productivity: number;
   description: string;
 }
 
