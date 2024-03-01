@@ -210,7 +210,7 @@ const Profile: React.FC<ProfileProps> = ({ userInfo }) => {
 
   const addGoal = () => {
     const newGoals = _.cloneDeep(goals);
-    const newGoal = _.cloneDeep(EMPTY_GOAL);
+    const newGoal = EMPTY_GOAL();
     newGoals[goalsKey] = (newGoals[goalsKey] || []).concat(newGoal);
     setGoals(newGoals);
   };
@@ -242,7 +242,7 @@ const Profile: React.FC<ProfileProps> = ({ userInfo }) => {
 
   const addFriend = () => {
     const newFriends = _.cloneDeep(friends);
-    const newFriend = _.cloneDeep(NEW_FRIEND);
+    const newFriend = NEW_FRIEND();
     newFriends.push(newFriend);
     setFriends(newFriends);
   }
@@ -268,7 +268,7 @@ const Profile: React.FC<ProfileProps> = ({ userInfo }) => {
 
   const addSub = () => {
     const newSubscriptions = _.cloneDeep(subscriptions);
-    const newSub = _.cloneDeep(EMPTY_SUBSCRIPTION);
+    const newSub = EMPTY_SUBSCRIPTION();
     newSub.tags = [];
     newSubscriptions.push(newSub);
     setSubscriptions(newSubscriptions);
@@ -421,7 +421,7 @@ const Profile: React.FC<ProfileProps> = ({ userInfo }) => {
           {subscriptions.map((el, ind) => (
             <SubscriptionComponent
               odd={ind % 2 == 1}
-              key={ind}
+              key={el._id}
               subscription={el}
               editSubscription={(s: Subscription) => editSub(ind, s)}
               deleteSubscription={() => deleteSub(ind)}
@@ -465,7 +465,7 @@ const Profile: React.FC<ProfileProps> = ({ userInfo }) => {
         <div>
           {(goals[goalsKey] || []).map((el, ind) => (
             <GoalComponent
-              key={mkk([goalsKey, ind, el])}
+              key={el.id}
               goal={el}
               editGoal={(g: Goal) => editGoal(ind, g)}
               deleteGoal={() => deleteGoal(ind)}
@@ -495,7 +495,7 @@ const Profile: React.FC<ProfileProps> = ({ userInfo }) => {
           {friends.map((el, ind) => (
             <FriendComponent
               odd={ind % 2 == 1}
-              key={ind}
+              key={el._id}
               friend={el}
               editFriend={(f: Friend) => editFriend(ind, f)}
               deleteFriend={() => deleteFriend(ind)}

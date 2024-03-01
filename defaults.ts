@@ -1,3 +1,5 @@
+import {v4 as uuidv4} from "uuid";
+
 export type ExtractStatics<C extends { prototype: any }> = Omit<C, "prototype">;
 
 export interface User {
@@ -14,6 +16,7 @@ export interface User {
 export type FinanceLog = Record<string, Transaction[]>;
 
 export interface Transaction {
+  id?: string;
   cost: number;
   description: string;
   location: string;
@@ -28,6 +31,7 @@ export interface Log {
 }
 
 export interface Subscription {
+  _id?: string;
   start: string;
   end: string;
   frequency: SubscriptionFrequency;
@@ -40,6 +44,7 @@ export interface Subscription {
 export type GoalsList = Record<string, Goal[]>; // key is "year-quarter(0-indexed)"
 
 export interface Goal {
+  id?: string;
   name: string;
   description: string;
   status: GoalStatus;
@@ -52,6 +57,7 @@ export enum GoalStatus {
 }
 
 export interface Friend {
+  _id?: string;
   name: string;
   lastUpdated: string;
 }
@@ -88,14 +94,15 @@ export const KONAMI_CODE = Object.freeze([
 
 export const MISC_TAG = "MISC";
 
-export const EMPTY_TRANSACTION: Transaction = Object.freeze({
+export const EMPTY_TRANSACTION = (): Transaction => ({
+  id: uuidv4(),
   cost: 0,
   description: "",
   location: "",
   tags: [],
 });
 
-export const EMPTY_SUBSCRIPTION: Subscription = Object.freeze({
+export const EMPTY_SUBSCRIPTION = (): Subscription => ({
   cost: 0,
   description: "",
   location: "",
@@ -105,7 +112,7 @@ export const EMPTY_SUBSCRIPTION: Subscription = Object.freeze({
   frequency: SubscriptionFrequency.EMPTY,
 });
 
-export const EMPTY_GOAL: Goal = Object.freeze({
+export const EMPTY_GOAL = (): Goal => ({
   name: "",
   description: "",
   status: GoalStatus.IN_PROGRESS,
@@ -113,7 +120,7 @@ export const EMPTY_GOAL: Goal = Object.freeze({
 
 export const EPOCH = new Date("1970-01-01");
 
-export const NEW_FRIEND: Friend = Object.freeze({
+export const NEW_FRIEND = (): Friend => ({
   name: "",
   lastUpdated: EPOCH.toLocaleDateString(),
 })

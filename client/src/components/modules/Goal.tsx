@@ -35,6 +35,7 @@ const Goal: React.FC<GoalProps> = ({
 
   useEffect(() => {
     editGoal({
+      id: goal.id,
       name,
       description,
       status: goal.status,

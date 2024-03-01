@@ -60,7 +60,7 @@ const Transaction: React.FC<TransactionProps> = ({
   }, [editing]);
 
   useEffect(() => {
-    editTransaction({ cost, description, location, tags });
+    editTransaction({ id: transaction.id, cost, description, location, tags });
   }, [cost, description, location, tags]);
 
   const handleClick = () => {

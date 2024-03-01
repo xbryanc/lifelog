@@ -34,6 +34,7 @@ const Friend: React.FC<FriendProps> = ({
 
   useEffect(() => {
     editFriend({
+      _id: friend._id,
       name,
       lastUpdated,
     });

@@ -60,6 +60,7 @@ const Subscription: React.FC<SubscriptionProps> = ({
 
   useEffect(() => {
     editSubscription({
+      _id: subscription._id,
       start,
       end,
       frequency,

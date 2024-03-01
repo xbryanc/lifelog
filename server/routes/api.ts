@@ -6,6 +6,7 @@ import User, { IUser } from "../models/user";
 import Diary from "../models/diary";
 import Finance from "../models/finance";
 import { Diary as DiaryType, FinanceLog } from "../../defaults";
+import { v4 as uuidv4 } from "uuid";
 
 declare global {
   namespace Express {
@@ -25,6 +26,11 @@ router.get("/whoami", function (req, res) {
 
 router.get("/user", async (req, res) => {
   const user = await User.findOne({ _id: req.query._id as string });
+  Object.values(user.goals).forEach(goalsList => {
+    goalsList.forEach(goal => {
+      goal.id = uuidv4();
+    });
+  });
   res.send(user);
 });
 
@@ -53,17 +59,18 @@ router.get("/all_years", async (req, res) => {
 });
 
 router.get("/diary", async (req, res) => {
-  res.send(
-    (await Diary.getDiaryForUser(req.user._id, req.query.year as string))
-      ?.diary ?? {}
-  );
+  const diary = (await Diary.getDiaryForUser(req.user._id, req.query.year as string))?.diary ?? {};
+  res.send(diary);
 });
 
 router.get("/finance", async (req, res) => {
-  res.send(
-    (await Finance.getFinanceForUser(req.user._id, req.query.year as string))
-      ?.finance ?? {}
-  );
+  const finance = (await Finance.getFinanceForUser(req.user._id, req.query.year as string))?.finance ?? {};
+  Object.values(finance).forEach(transactionList => {
+    transactionList.forEach(transaction => {
+      transaction.id = uuidv4();
+    });
+  });
+  res.send(finance);
 });
 
 router.get("/echo", function (req, res) {
