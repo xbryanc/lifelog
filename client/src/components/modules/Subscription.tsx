@@ -42,6 +42,7 @@ const Subscription: React.FC<SubscriptionProps> = ({
   const [frequency, setFrequency] = useState<SubscriptionFrequency>(
     subscription.frequency
   );
+  const [frequencyGap, setFrequencyGap] = useState(subscription.frequencyGap || 1);
   const [cost, setCost] = useState(subscription.cost);
   const [location, setLocation] = useState(subscription.location);
   const [description, setDescription] = useState(subscription.description);
@@ -49,6 +50,7 @@ const Subscription: React.FC<SubscriptionProps> = ({
   const [editing, setEditing] = useState(isIncomplete);
   const editingRef = useRef(editing);
   const [editCost, setEditCost] = useState(cost);
+  const [editFrequencyGap, setEditFrequencyGap] = useState(frequencyGap);
   const [editLocation, setEditLocation] = useState(location);
   const [editDescription, setEditDescription] = useState(description);
 
@@ -64,12 +66,13 @@ const Subscription: React.FC<SubscriptionProps> = ({
       start,
       end,
       frequency,
+      frequencyGap,
       cost,
       location,
       description,
       tags,
     });
-  }, [start, end, frequency, cost, location, description, tags]);
+  }, [start, end, frequency, frequencyGap, cost, location, description, tags]);
 
   useEffect(() => {
     if (!editing) {
@@ -130,6 +133,7 @@ const Subscription: React.FC<SubscriptionProps> = ({
   const startSubEdit = () => {
     setEditing(true);
     setEditCost(cost);
+    setEditFrequencyGap(frequencyGap);
     setEditLocation(location);
     setEditDescription(description);
   };
@@ -137,6 +141,7 @@ const Subscription: React.FC<SubscriptionProps> = ({
   const commitSubEdit = () => {
     setEditing(false);
     setCost(editCost);
+    setFrequencyGap(editFrequencyGap);
     setLocation(editLocation);
     setDescription(editDescription);
   };
@@ -224,22 +229,33 @@ const Subscription: React.FC<SubscriptionProps> = ({
           </div>
           <div>
             {editing ? (
-              <select
-                name="subFrequency"
-                id="subFrequency"
-                value={frequency}
-                onChange={(e) =>
-                  setFrequency(e.target.value as SubscriptionFrequency)
-                }
-              >
-                {_.values(SubscriptionFrequency).map((freq) => (
-                  <option key={freq} value={freq}>
-                    {freq}
-                  </option>
-                ))}
-              </select>
+              <div className={classes.subscriptionContainer}>
+                <input
+                  type="number"
+                  className={classes.editEntry}
+                  name="subFrequencyGap"
+                  id="subFrequencyGap"
+                  value={editFrequencyGap}
+                  onChange={(e) => setEditFrequencyGap(parseInt(e.target.value))}
+                  onClick={(e) => e.stopPropagation()}
+                />
+                <select
+                  name="subFrequency"
+                  id="subFrequency"
+                  value={frequency}
+                  onChange={(e) =>
+                    setFrequency(e.target.value as SubscriptionFrequency)
+                  }
+                >
+                  {_.values(SubscriptionFrequency).map((freq) => (
+                    <option key={freq} value={freq}>
+                      {freq}
+                    </option>
+                  ))}
+                </select>
+              </div>
             ) : (
-              formatFrequency(frequency)
+              formatFrequency(frequency, frequencyGap)
             )}
           </div>
         </div>
@@ -330,6 +346,11 @@ const useStyles = makeStyles((theme) => ({
     borderRadius: "5px",
     margin: "5px",
     padding: "5px",
+  },
+  subscriptionContainer: {
+    display: "flex",
+    flexDirection: "row",
+    gap: theme.spacing(1),
   },
   cost: {
     cursor: "pointer",

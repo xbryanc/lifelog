@@ -37,6 +37,7 @@ export interface Subscription {
   start: string;
   end: string;
   frequency: SubscriptionFrequency;
+  frequencyGap: number;
   cost: number;
   description: string;
   location: string;
@@ -71,6 +72,14 @@ export enum SubscriptionFrequency {
   MONTHLY = "monthly",
   YEARLY = "yearly",
 }
+
+export const FREQUENCY_TO_DISPLAY: Record<SubscriptionFrequency, string> = {
+  [SubscriptionFrequency.EMPTY]: "",
+  [SubscriptionFrequency.DAILY]: "day(s)",
+  [SubscriptionFrequency.WEEKLY]: "week(s)",
+  [SubscriptionFrequency.MONTHLY]: "month(s)",
+  [SubscriptionFrequency.YEARLY]: "year(s)",
+};
 
 export enum Span {
   DAY = "day",
@@ -112,6 +121,7 @@ export const EMPTY_SUBSCRIPTION = (): Subscription => ({
   start: "",
   end: "",
   frequency: SubscriptionFrequency.EMPTY,
+  frequencyGap: 1,
 });
 
 export const EMPTY_GOAL = (): Goal => ({

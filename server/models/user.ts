@@ -43,6 +43,7 @@ const schema: Schema<IUser, IUserModel> = new mongoose.Schema(
         start: String,
         end: String,
         frequency: String,
+        frequencyGap: Number,
         cost: Number,
         description: String,
         location: String,

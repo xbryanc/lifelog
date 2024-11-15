@@ -1,4 +1,4 @@
-import { Span, Subscription, SubscriptionFrequency } from "./defaults";
+import { Span, Subscription, SubscriptionFrequency, FREQUENCY_TO_DISPLAY } from "./defaults";
 import _ from 'lodash';
 
 export const mkk = (tags: any[]) => strhash(JSON.stringify(tags));
@@ -19,22 +19,37 @@ export const toGoalsKey = (selectedDate: string) => {
 export const stripId = (obj: Object): Object => _.omit(obj, '_id');
 
 export const subApplies = (sub: Subscription, selectedDate: string | Date) => {
-  const curDate = new Date(selectedDate);
-  if (sub.end !== "" && new Date(sub.end) < curDate) {
-    return false;
-  }
-  if (!sub.start || sub.start === "" || new Date(sub.start) > curDate) {
-    return false;
-  }
   const startDate = new Date(sub.start);
-  if (sub.frequency === SubscriptionFrequency.DAILY) {
-    return true;
-  } else if (sub.frequency === SubscriptionFrequency.WEEKLY) {
-    return startDate.getDay() === curDate.getDay();
-  } else if (sub.frequency === SubscriptionFrequency.MONTHLY) {
-    return startDate.getDate() === curDate.getDate();
-  } else if (sub.frequency === SubscriptionFrequency.YEARLY) {
+  const endDate = new Date(sub.end);
+  const curDate = new Date(selectedDate);
+  const gap = sub.frequencyGap || 1;
+  if (sub.end !== "" && endDate < curDate) {
+    return false;
+  }
+  if (!sub.start || sub.start === "" || startDate > curDate || sub.frequency === SubscriptionFrequency.EMPTY) {
+    return false;
+  }
+
+  if (sub.frequency === SubscriptionFrequency.DAILY || sub.frequency === SubscriptionFrequency.WEEKLY) {
+    const startDateUTC = new Date(Date.UTC(startDate.getUTCFullYear(), startDate.getUTCMonth(), startDate.getUTCDate()));
+    const curDateUTC = new Date(Date.UTC(curDate.getUTCFullYear(), curDate.getUTCMonth(), curDate.getUTCDate()));
+
+    const diffMs = curDateUTC.getTime() - startDateUTC.getTime();
+    const gapMs = sub.frequency === SubscriptionFrequency.DAILY
+      ? gap * 24 * 60 * 60 * 1000
+      : gap * 7 * 24 * 60 * 60 * 1000;
+    return diffMs % gapMs === 0;
+  }
+
+  if (sub.frequency === SubscriptionFrequency.MONTHLY) {
+    const monthsDiff = (curDate.getFullYear() - startDate.getFullYear()) * 12 + (curDate.getMonth() - startDate.getMonth());
+    return monthsDiff % gap === 0 && curDate.getDate() === startDate.getDate();
+  }
+
+  if (sub.frequency === SubscriptionFrequency.YEARLY) {
+    const yearsDiff = curDate.getFullYear() - startDate.getFullYear();
     return (
+      yearsDiff % gap === 0 &&
       startDate.getMonth() === curDate.getMonth() &&
       startDate.getDate() === curDate.getDate()
     );
@@ -66,11 +81,11 @@ export const formatCost = (costInPennies: number) => {
   return `$${dollar.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")}.${rest}`;
 };
 
-export const formatFrequency = (freq: SubscriptionFrequency) => {
+export const formatFrequency = (freq: SubscriptionFrequency, gap: number) => {
   if (freq === SubscriptionFrequency.EMPTY) {
     return "(SET)";
   }
-  return `(${freq})`;
+  return `(every ${gap} ${FREQUENCY_TO_DISPLAY[freq]})`;
 };
 
 export const formatSubTime = (date: string) => {
