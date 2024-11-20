@@ -23,6 +23,18 @@ export interface Transaction {
   tags: string[];
 }
 
+export interface TransactionListItem {
+  cost: number;
+  location: string;
+  date: string;
+}
+
+export interface TransactionSummary {
+  total: number;
+  itemized: Record<string, number>;
+  transactionList: Record<string, TransactionListItem[]>;
+}
+
 export type Diary = Record<string, Log>;
 
 export interface Log {

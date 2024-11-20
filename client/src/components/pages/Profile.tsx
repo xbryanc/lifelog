@@ -13,7 +13,6 @@ import {
   Friend,
   Goal,
   GoalStatus,
-  MISC_TAG,
   Span,
   Subscription,
   User,
@@ -22,10 +21,10 @@ import {
   mkk,
   colorForKey,
   formatCost,
-  subApplies,
   subtractPreset,
   toGoalsKey,
   stripId,
+  getTransactionsWithinDates,
 } from "../../../../helpers";
 import SubscriptionComponent from "../modules/Subscription";
 import GoalComponent from "../modules/Goal";
@@ -34,12 +33,6 @@ import { makeStyles, theme } from "../../theme";
 
 interface ProfileProps {
   userInfo: User;
-}
-
-interface TransactionListItem {
-  cost: number;
-  location: string;
-  date: string;
 }
 
 interface PieEntry {
@@ -143,61 +136,9 @@ const Profile: React.FC<ProfileProps> = ({ userInfo }) => {
   const getSpendingByCategory = useCallback(() => {
     const startDate = new Date(chartStart);
     const endDate = new Date(chartEnd);
-    let total = 0;
-    const itemized: Record<string, number> = {};
-    const transactionList: Record<string, TransactionListItem[]> = {};
-    if (endDate < startDate) {
-      return { total, transactionList, pieData: [] };
-    }
-    const addSpending = (
-      tag: string,
-      cost: number,
-      location: string,
-      date: string
-    ) => {
-      if (!cost) {
-        return;
-      }
-      total += cost;
-      if (tag !== "") {
-        if (!itemized.hasOwnProperty(tag)) {
-          itemized[tag] = 0;
-          transactionList[tag] = [];
-        }
-        itemized[tag] += cost;
-        transactionList[tag].push({
-          cost,
-          location,
-          date,
-        });
-      }
-    };
-    for (
-      let date = startDate;
-      date <= endDate;
-      date.setDate(date.getDate() + 1)
-    ) {
-      subscriptions.forEach((sub) => {
-        if (subApplies(sub, date)) {
-          addSpending(
-            sub.tags.length === 0 ? MISC_TAG : sub.tags[0],
-            sub.cost,
-            sub.location,
-            date.toLocaleDateString()
-          );
-        }
-      });
-      const dateStr = date.toLocaleDateString();
-      const transactions = finance[dateStr] ?? [];
-      transactions.forEach((transaction) => {
-        addSpending(
-          transaction.tags.length === 0 ? MISC_TAG : transaction.tags[0],
-          transaction.cost,
-          transaction.location,
-          date.toLocaleDateString()
-        );
-      });
-    }
+
+    const { total, itemized, transactionList } = getTransactionsWithinDates(finance, subscriptions, startDate, endDate);
+
     const pieData: PieEntry[] = Object.entries(itemized).map(
       ([key, value]) => ({
         title: key,
