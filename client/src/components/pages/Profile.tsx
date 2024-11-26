@@ -4,7 +4,15 @@ import Calendar from "react-calendar";
 import _ from "lodash";
 import clsx from "clsx";
 import { PieChart } from "react-minimal-pie-chart";
-
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
 import {
   EMPTY_GOAL,
   EMPTY_SUBSCRIPTION,
@@ -16,12 +24,13 @@ import {
   Span,
   Subscription,
   User,
+  MISC_TAG,
 } from "../../../../defaults";
 import {
   mkk,
   colorForKey,
   formatCost,
-  subtractPreset,
+  subtractSpan,
   toGoalsKey,
   stripId,
   getTransactionsWithinDates,
@@ -41,7 +50,13 @@ interface PieEntry {
   color: string;
 }
 
+interface HistogramEntry {
+  range: string;
+  total: number;
+}
+
 const Profile: React.FC<ProfileProps> = ({ userInfo }) => {
+  const allTags = useMemo(() => userInfo.tags.concat(MISC_TAG), [userInfo.tags]);
   const classes = useStyles();
   const [selectedTag, _setSelectedTag] = useState("");
   const [finance, setFinance] = useState<FinanceLog>({});
@@ -49,22 +64,27 @@ const Profile: React.FC<ProfileProps> = ({ userInfo }) => {
     _.cloneDeep(userInfo.subscriptions)
   );
   const [chartStart, setChartStart] = useState(
-    new Date(Date.now()).toLocaleDateString()
+    new Date().toLocaleDateString()
   );
   const [chartEnd, setChartEnd] = useState(
-    new Date(Date.now()).toLocaleDateString()
+    new Date().toLocaleDateString()
   );
   const [chartDateField, setChartDateField] = useState<"start" | "end">(
     "start"
   );
   const [tempChartDate, setTempChartDate] = useState(
-    new Date(Date.now()).toLocaleDateString()
+    new Date().toLocaleDateString()
   );
   const [selectingChart, setSelectingChart] = useState(false);
   const [hoverKey, setHoverKey] = useState("");
   const [defaultHoverKey, _setDefaultHoverKey] = useState("");
+  const [graphFrequencyGap, setGraphFrequencyGap] = useState(1);
+  const [graphFrequency, setGraphFrequency] = useState<Span>(Span.MONTH);
+  const [graphIndices, setGraphIndices] = useState(10);
+  const [graphTags, setGraphTags] = useState(_.cloneDeep(allTags));
+  const [selectingGraph, setSelectingGraph] = useState(false);
   const [goalsKey, setGoalsKey] = useState(
-    toGoalsKey(new Date(Date.now()).toLocaleDateString())
+    toGoalsKey(new Date().toLocaleDateString())
   );
   const [goals, setGoals] = useState(_.cloneDeep(userInfo.goals));
   const [friends, setFriends] = useState(_.cloneDeep(userInfo.friends).sort((friendA, friendB) => {
@@ -78,7 +98,7 @@ const Profile: React.FC<ProfileProps> = ({ userInfo }) => {
   const subsChanged = useMemo(
     () => !_.isEqual(subscriptions.map(stripId), userInfo.subscriptions.map(stripId)),
     [subscriptions, userInfo.subscriptions]
-  )
+  );
 
   const goalsChanged = useMemo(
     () => !_.isEqual(goals, userInfo.goals),
@@ -122,11 +142,28 @@ const Profile: React.FC<ProfileProps> = ({ userInfo }) => {
     }
   };
 
+  const addGraphTag = (tag: string) => {
+    setGraphTags(graphTags.concat(tag));
+  };
+
+  const removeGraphTag = (tag: string) => {
+    setGraphTags(graphTags.filter(t => t !== tag));
+  };
+
+  const selectAllGraphTags = () => {
+    setGraphTags(_.cloneDeep(allTags));
+  };
+
+  const deselectAllGraphTags = () => {
+    setGraphTags([]);
+  };
+
   const setPresetSpan = (span: Span) => {
-    const today = new Date(Date.now()).toLocaleDateString();
-    const prev = subtractPreset(today, span);
-    setChartStart(prev);
-    setChartEnd(today);
+    const today = new Date();
+    const prev = subtractSpan(today, span);
+    prev.setDate(prev.getDate() + 1);
+    setChartStart(prev.toLocaleDateString());
+    setChartEnd(today.toLocaleDateString());
   };
 
   const setDefaultHoverKey = (key: string) => {
@@ -148,6 +185,27 @@ const Profile: React.FC<ProfileProps> = ({ userInfo }) => {
     );
     return { total, transactionList, pieData };
   }, [chartStart, chartEnd, subscriptions, finance]);
+
+  const getHistoricalSpending = useCallback(() => {
+    const graphData: HistogramEntry[] = [];
+    let curDate = new Date();
+    for (let i = 0; i < graphIndices; i++) {
+      let prevDate = curDate;
+      for (let j = 0; j < graphFrequencyGap; j++) {
+        prevDate = subtractSpan(prevDate, graphFrequency);
+      }
+      const calcPrevDate = new Date(prevDate);
+      calcPrevDate.setDate(calcPrevDate.getDate() + 1);
+      const { itemized } = getTransactionsWithinDates(finance, subscriptions, calcPrevDate, curDate);
+      const total = _.sum(graphTags.map(tag => _.get(itemized, tag, 0)));
+      graphData.unshift({
+        range: `${calcPrevDate.toLocaleDateString()} - ${curDate.toLocaleDateString()}`,
+        total,
+      });
+      curDate = prevDate;
+    }
+    return { graphData };
+  }, [subscriptions, finance, graphFrequency, graphFrequencyGap, graphIndices, graphTags]);
 
   const addGoal = () => {
     const newGoals = _.cloneDeep(goals);
@@ -286,6 +344,10 @@ const Profile: React.FC<ProfileProps> = ({ userInfo }) => {
     [goalsKey]
   );
 
+  const { graphData } = useMemo(getHistoricalSpending, [
+    getHistoricalSpending,
+  ]);
+
   return (
     <div className={classes.profileContainer}>
       {!selectingChart ? null : (
@@ -343,7 +405,7 @@ const Profile: React.FC<ProfileProps> = ({ userInfo }) => {
           </div>
         </div>
         <div className={classes.finTagsList}>
-          {userInfo.tags.map((el) => {
+          {allTags.map((el) => {
             return (
               <div key={el} className={classes.finTag}>
                 <div
@@ -520,6 +582,90 @@ const Profile: React.FC<ProfileProps> = ({ userInfo }) => {
           </div>
         </div>
       </div>
+      <div className={classes.graphContainer}>
+        <div className={classes.graphHeader}>
+          {selectingGraph ? (
+            <div className={classes.inputContainer}>
+              <input
+                type="number"
+                name="graphFrequencyGap"
+                id="graphFrequencyGap"
+                value={graphFrequencyGap}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value);
+                  if (val > 0) {
+                    setGraphFrequencyGap(val);
+                  }
+                }}
+                onClick={(e) => e.stopPropagation()}
+              />
+              <select
+                name="graphFrequency"
+                id="graphFrequency"
+                value={graphFrequency}
+                onChange={(e) =>
+                  setGraphFrequency(e.target.value as Span)
+                }
+              >
+                {_.values(Span).map((freq) => (
+                  <option key={freq} value={freq}>
+                    {freq}
+                  </option>
+                ))}
+              </select>
+              <input
+                type="number"
+                name="graphIndices"
+                id="graphIndices"
+                value={graphIndices}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value);
+                  if (val > 1) {
+                    setGraphIndices(val);
+                  }
+                }}
+                onClick={(e) => e.stopPropagation()}
+              />
+            </div>
+          ) : (
+            <span>
+              Spending for past {graphFrequencyGap} {graphFrequency}(s) ({graphIndices} indices)
+            </span>
+          )}
+          <img
+            className={clsx(classes.smallButton, "picture")}
+            onClick={() => setSelectingGraph(!selectingGraph)}
+            src={selectingGraph ? "/media/check.svg" : "/media/pencil.svg"}
+          />
+        </div>
+        <div className={classes.graphBody}>
+          <div className={classes.graphTags}>
+            {allTags.map((tag, ind) => (
+              <label key={ind}>
+                <input
+                  type="checkbox"
+                  checked={graphTags.includes(tag)}
+                  onChange={() => { graphTags.includes(tag) ? removeGraphTag(tag) : addGraphTag(tag); }}
+                />
+                {tag}
+              </label>
+            ))}
+          </div>
+          <div className={classes.graphTags}>
+            <div className={classes.smallButton} onClick={selectAllGraphTags}>ALL</div>
+            <div className={classes.smallButton} onClick={deselectAllGraphTags}>NONE</div>
+          </div>
+          <ResponsiveContainer className={classes.histogramContainer} width="100%" height={400}>
+            <BarChart data={graphData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="range" />
+              <YAxis tickFormatter={formatCost} />
+              <Tooltip formatter={formatCost} />
+              <Bar dataKey="total" fill={theme.colors.periwinkle100} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
     </div>
   );
 };
@@ -593,6 +739,9 @@ const useStyles = makeStyles((theme) => ({
     "&.green": {
       color: theme.colors.green,
     },
+    "&.picture": {
+      width: "30px",
+    },
   },
   profileContainer: {
     display: "flex",
@@ -613,6 +762,8 @@ const useStyles = makeStyles((theme) => ({
     margin: "5px",
   },
   chartContainer: {
+    marginTop: theme.spacing(1),
+    marginBottom: theme.spacing(1),
     border: "1px solid black",
     borderRadius: "5px",
     padding: "5px",
@@ -665,7 +816,48 @@ const useStyles = makeStyles((theme) => ({
   chartTransactions: {
     paddingLeft: "10px",
   },
+  graphContainer: {
+    marginTop: theme.spacing(1),
+    marginBottom: theme.spacing(1),
+    border: "1px solid black",
+    borderRadius: "5px",
+    padding: "5px",
+    width: "80%",
+  },
+  graphHeader: {
+    display: "flex",
+    flexDirection: "row",
+    justifyContent: "center",
+    borderBottom: "1px solid black",
+    padding: "10px",
+  },
+  inputContainer: {
+    display: "flex",
+    gap: theme.spacing(1),
+  },
+  graphBody: {
+    display: "flex",
+    flexDirection: "column",
+  },
+  graphTags: {
+    display: "flex",
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
+    gap: theme.spacing(1),
+  },
+  histogramContainer: {
+    padding: theme.spacing(1),
+  },
+  icons: {
+    flexGrow: 0,
+    padding: "5px",
+    display: "flex",
+    flexDirection: "row",
+    justifyContent: "center",
+  },
   subContainer: {
+    marginBottom: theme.spacing(1),
     border: "1px solid black",
     borderRadius: "5px",
     padding: "5px",

@@ -56,9 +56,7 @@ const Subscription: React.FC<SubscriptionProps> = ({
 
   const [showSelect, setShowSelect] = useState(false);
   const [endpointName, setEndpointName] = useState<"start" | "end">("start");
-  const [endpointDate, setEndpointDate] = useState(
-    new Date(Date.now()).toLocaleDateString()
-  );
+  const [endpointDate, setEndpointDate] = useState(new Date().toLocaleDateString());
 
   useEffect(() => {
     editSubscription({
@@ -115,8 +113,7 @@ const Subscription: React.FC<SubscriptionProps> = ({
     }
     setEndpointName(fieldName);
     setEndpointDate(
-      (fieldName === "start" ? start : end) ||
-        new Date(Date.now()).toLocaleDateString()
+      (fieldName === "start" ? start : end) || new Date().toLocaleDateString()
     );
     setShowSelect(true);
   };
@@ -236,7 +233,12 @@ const Subscription: React.FC<SubscriptionProps> = ({
                   name="subFrequencyGap"
                   id="subFrequencyGap"
                   value={editFrequencyGap}
-                  onChange={(e) => setEditFrequencyGap(parseInt(e.target.value))}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value);
+                    if (val > 0) {
+                      setEditFrequencyGap(val);
+                    }
+                  }}
                   onClick={(e) => e.stopPropagation()}
                 />
                 <select
@@ -255,7 +257,7 @@ const Subscription: React.FC<SubscriptionProps> = ({
                 </select>
               </div>
             ) : (
-              formatFrequency(frequency, frequencyGap)
+              `(every ${formatFrequency(frequency, frequencyGap)})`
             )}
           </div>
         </div>

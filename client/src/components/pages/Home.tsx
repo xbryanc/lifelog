@@ -27,9 +27,7 @@ interface HomeProps {
 
 const Home: React.FC<HomeProps> = ({ userInfo }) => {
   const classes = useStyles();
-  const [selectedDate, setSelectedDate] = useState(
-    new Date(Date.now()).toLocaleDateString()
-  );
+  const [selectedDate, setSelectedDate] = useState(new Date().toLocaleDateString());
   const [queriedYears, setQueriedYears] = useState<string[]>([]);
   const [originalDiary, setOriginalDiary] = useState<Diary>({});
   const [diary, setDiary] = useState<Diary>({});
@@ -50,22 +48,22 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
   const [searchString, setSearchString] = useState("");
   const [searchResults, setSearchResults] = useState<string[]>([]);
   const [diaryText, setDiaryText] = useState(
-    diary[new Date(Date.now()).toLocaleDateString()]?.description ?? ""
+    diary[new Date().toLocaleDateString()]?.description ?? ""
   );
   const [rating, setRating] = useState(
-    diary[new Date(Date.now()).toLocaleDateString()]?.rating ?? 0
+    diary[new Date().toLocaleDateString()]?.rating ?? 0
   );
   const [displayRating, setDisplayRating] = useState(
-    diary[new Date(Date.now()).toLocaleDateString()]?.rating ?? 0
+    diary[new Date().toLocaleDateString()]?.rating ?? 0
   );
   const [productivity, setProductivity] = useState(
-    diary[new Date(Date.now()).toLocaleDateString()]?.productivity ?? 0
+    diary[new Date().toLocaleDateString()]?.productivity ?? 0
   );
   const [displayProductivity, setDisplayProductivity] = useState(
-    diary[new Date(Date.now()).toLocaleDateString()]?.productivity ?? 0
+    diary[new Date().toLocaleDateString()]?.productivity ?? 0
   );
   const [revised, setRevised] = useState(
-    !!diary[new Date(Date.now()).toLocaleDateString()]?.revised
+    !!diary[new Date().toLocaleDateString()]?.revised
   );
   const [refresherDate, setRefresherDate] = useState<string | undefined>(undefined);
   const [changeSet, setChangeSet] = useState<string[]>([]);
@@ -524,6 +522,10 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
         />
         <style>
           {`
+            .react-calendar__navigation {
+              display: flex;
+            }
+
             .react-calendar__tile {
                 display: flex;
                 flex-direction: row;
@@ -561,7 +563,7 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
               <div
                 className={classes.simpleButton}
                 onClick={() =>
-                  calendarChange(new Date(Date.now()).toLocaleDateString())
+                  calendarChange(new Date().toLocaleDateString())
                 }
               >
                 Today

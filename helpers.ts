@@ -55,7 +55,7 @@ export const getTransactionsWithinDates = (
     }
   };
 
-  for (let date = startDate; date <= endDate; date.setDate(date.getDate() + 1)) {
+  for (const date = new Date(startDate); date <= endDate; date.setDate(date.getDate() + 1)) {
     subscriptions.forEach((sub) => {
       if (subApplies(sub, date)) {
         addSpending(
@@ -120,20 +120,18 @@ export const subApplies = (sub: Subscription, selectedDate: string | Date) => {
   return false;
 };
 
-export const subtractPreset = (date: string, span: Span) => {
-  const curDate = new Date(date);
-  const newDate = curDate;
-  if (span !== Span.DAY) {
-    if (span === Span.WEEK) {
-      newDate.setDate(curDate.getDate() - 7);
-    } else if (span === Span.MONTH) {
-      newDate.setMonth(curDate.getMonth() - 1);
-    } else if (span === Span.YEAR) {
-      newDate.setFullYear(curDate.getFullYear() - 1);
-    }
-    newDate.setDate(newDate.getDate() + 1);
+export const subtractSpan = (curDate: Date, span: Span) => {
+  const newDate = new Date(curDate);
+  if (span === Span.DAY) {
+    newDate.setDate(curDate.getDate() - 1);
+  } else if (span === Span.WEEK) {
+    newDate.setDate(curDate.getDate() - 7);
+  } else if (span === Span.MONTH) {
+    newDate.setMonth(curDate.getMonth() - 1);
+  } else if (span === Span.YEAR) {
+    newDate.setFullYear(curDate.getFullYear() - 1);
   }
-  return newDate.toLocaleDateString();
+  return newDate;
 };
 
 export const formatCost = (costInPennies: number) => {
@@ -146,9 +144,9 @@ export const formatCost = (costInPennies: number) => {
 
 export const formatFrequency = (freq: SubscriptionFrequency, gap: number) => {
   if (freq === SubscriptionFrequency.EMPTY) {
-    return "(SET)";
+    return "NULL";
   }
-  return `(every ${gap} ${FREQUENCY_TO_DISPLAY[freq]})`;
+  return `${gap} ${FREQUENCY_TO_DISPLAY[freq]}`;
 };
 
 export const formatSubTime = (date: string) => {

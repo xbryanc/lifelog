@@ -94,7 +94,7 @@ const Friend: React.FC<FriendProps> = ({
         <div className={classes.icons}>
           <img
             className={clsx(classes.smallButton, "picture")}
-            onClick={() => setLastUpdated(new Date(Date.now()).toLocaleDateString())}
+            onClick={() => setLastUpdated(new Date().toLocaleDateString())}
             src={"/media/refresh.svg"}
           />
           <img

@@ -6,7 +6,7 @@ import User, { IUser } from "../models/user";
 import Diary from "../models/diary";
 import Finance from "../models/finance";
 import { Diary as DiaryType, FinanceLog, Span } from "../../defaults";
-import { subtractPreset } from "../../helpers";
+import { subtractSpan } from "../../helpers";
 import { v4 as uuidv4 } from "uuid";
 
 declare global {
@@ -61,9 +61,9 @@ router.get("/all_years", async (req, res) => {
 
 router.get("/lookback", async (req, res) => {
   const diaries = await Diary.find({ user: req.user._id });
-  const now = new Date().toLocaleDateString();
+  const now = new Date();
   const dates = diaries.flatMap(diary =>
-    Object.entries(diary.diary).filter(([key, entry]) => !entry.revised && new Date(subtractPreset(now, Span.MONTH)) > new Date(key))
+    Object.entries(diary.diary).filter(([key, entry]) => !entry.revised && subtractSpan(now, Span.MONTH) > new Date(key))
                                .map(([key]) => key));
   res.send({ refresherDate: _.sample(dates) });
 });
