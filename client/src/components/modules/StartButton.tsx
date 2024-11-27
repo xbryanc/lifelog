@@ -11,7 +11,7 @@ const StartButton: React.FC<StartButtonProps> = ({ userInfo }) => {
   return (
     <div className={classes.login}>
       <a href={!userInfo ? "/auth/google" : "/home"}>
-        <div className={classes.button}>{!userInfo ? "login" : "enter"}</div>
+        <div className={classes.button}>{!userInfo ? "LOGIN" : "ENTER"}</div>
       </a>
     </div>
   );
@@ -25,13 +25,13 @@ const useStyles = makeStyles((theme) => ({
     cursor: "pointer",
     fontFamily: "Montserrat, sans-serif",
     letterSpacing: "0.1em",
-    fontSize: "2vw",
+    fontSize: "30px",
     lineHeight: 1,
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
     padding: "0.55em 1.5em 0.6em",
-    borderRadius: "100vw",
+    borderRadius: "20px",
     textDecorationLine: "none",
     border: `0.08em solid ${theme.colors.black}`,
     textAlign: "center",

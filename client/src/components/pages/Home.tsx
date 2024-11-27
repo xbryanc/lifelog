@@ -981,34 +981,34 @@ const useStyles = makeStyles((theme) => ({
     backgroundColor: "darkgrey",
   },
   rating1: {
-    backgroundColor: "#FF3300",
+    backgroundColor: "#ED0000",
   },
   rating2: {
-    backgroundColor: "#ff6600",
+    backgroundColor: "#ED712D",
   },
   rating3: {
-    backgroundColor: "#ff9900",
+    backgroundColor: "#F19E38",
   },
   rating4: {
-    backgroundColor: "#FFCC00",
+    backgroundColor: "#F7CE46",
   },
   rating5: {
-    backgroundColor: "#FFFF00",
+    backgroundColor: "#FFFF53",
   },
   rating6: {
-    backgroundColor: "#ccff00",
+    backgroundColor: "#D7FE51",
   },
   rating7: {
-    backgroundColor: "#99ff00",
+    backgroundColor: "#B1FD50",
   },
   rating8: {
-    backgroundColor: "#66ff00",
+    backgroundColor: "#92FC4D",
   },
   rating9: {
-    backgroundColor: "#33ff00",
+    backgroundColor: "#71F040",
   },
   rating10: {
-    backgroundColor: "#00FF00",
+    backgroundColor: "#37F000",
   },
   reactCalendarTile: {
     display: "flex",

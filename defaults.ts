@@ -100,8 +100,6 @@ export enum Span {
   YEAR = "year",
 }
 
-export const NAVBAR_HAMBURGER_WIDTH_THRESHOLD = 991;
-
 export const KONAMI_CODE = Object.freeze([
   "arrowup",
   "arrowup",

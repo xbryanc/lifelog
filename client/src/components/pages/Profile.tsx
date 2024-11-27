@@ -849,6 +849,7 @@ const useStyles = makeStyles((theme) => ({
     justifyContent: "center",
   },
   subContainer: {
+    marginTop: theme.spacing(1),
     marginBottom: theme.spacing(1),
     border: "1px solid black",
     borderRadius: "5px",

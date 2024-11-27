@@ -16,15 +16,14 @@ const Root: React.FC<RootProps> = ({ userInfo }) => {
 
   return (
     <div className={classes.container}>
-      <div className={classes.title}>LIFELOG</div>
+      <img src="/media/logo.svg" className={classes.title} />
       <div className={classes.description}>
-        a tool that combines support for a daily journal with a personal finance
-        tracker
+        a daily journaling and personal finance tracking tool
       </div>
       <StartButton userInfo={userInfo} />
       <div className={classes.disclaimer}>
         DISCLAIMER: If you are not comfortable with an unknown entity keeping
-        track of your VERY personal data, do not use this website.
+        track of your VERY personal data, do not use this website
       </div>
     </div>
   );
@@ -37,18 +36,21 @@ const useStyles = makeStyles((theme) => ({
     alignItems: "center",
     justifyContent: "center",
     height: "100vh",
+    gap: theme.spacing(3),
   },
   title: {
-    fontSize: "45px",
-    fontFamily: "'Comfortaa', cursive",
+    height: "100px",
+    marginBottom: theme.spacing(2),
   },
   description: {
     fontSize: "30px",
     fontFamily: "'Montserrat', sans-serif",
+    textAlign: "center",
   },
   disclaimer: {
     fontSize: "10px",
     fontFamily: "'Montserrat', sans-serif",
+    textAlign: "center",
   },
 }));
 
