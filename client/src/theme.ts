@@ -320,6 +320,28 @@ export const theme = {
   },
 } as const;
 
+export const generateReactCalendarStyle = () => {
+  return `
+    .react-calendar__navigation {
+      display: flex;
+    }
+
+    .react-calendar__tile {
+        display: flex;
+        flex-direction: row;
+        justify-content: center;
+    }
+
+    .react-calendar__tile--now {
+        border-color: ${theme.colors.periwinkle50};
+    }
+
+    .react-calendar__tile--active {
+        border-color: ${theme.colors.gold};
+    }
+  `;
+}
+
 export function makeStyles<
   Props extends {} = {},
   ClassKey extends string = string

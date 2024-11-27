@@ -17,7 +17,7 @@ import {
 import { subApplies, sortByDate } from "../../../../helpers";
 import TransactionComponent from "../modules/Transaction";
 import SubscriptionComponent from "../modules/Subscription";
-import { makeStyles, theme } from "../../theme";
+import { generateReactCalendarStyle, makeStyles } from "../../theme";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faStar } from '@fortawesome/free-solid-svg-icons';
 
@@ -490,7 +490,7 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
       )}
       <div>
         <Calendar
-          className={classes.homeCalendar}
+          className={classes.calendar}
           onClickDay={(e: any) => calendarChange(e.toLocaleDateString())}
           onActiveStartDateChange={(e: any) =>
             fetchYear(new Date(e.activeStartDate).getFullYear().toString())
@@ -521,25 +521,7 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
           value={new Date(selectedDate)}
         />
         <style>
-          {`
-            .react-calendar__navigation {
-              display: flex;
-            }
-
-            .react-calendar__tile {
-                display: flex;
-                flex-direction: row;
-                justify-content: center;
-            }
-
-            .react-calendar__tile--now {
-                border-color: ${theme.colors.periwinkle50};
-            }
-
-            .react-calendar__tile--active {
-                border-color: ${theme.colors.gold};
-            }
-          `}
+          {generateReactCalendarStyle()}
         </style>
       </div>
       <div className={classes.entryContainer}>
@@ -988,7 +970,7 @@ const useStyles = makeStyles((theme) => ({
       opacity: 0.2,
     },
   },
-  homeCalendar: {
+  calendar: {
     width: "70vw",
     margin: "20px 0",
   },

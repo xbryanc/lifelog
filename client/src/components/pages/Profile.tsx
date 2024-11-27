@@ -38,7 +38,7 @@ import {
 import SubscriptionComponent from "../modules/Subscription";
 import GoalComponent from "../modules/Goal";
 import FriendComponent from "../modules/Friend";
-import { makeStyles, theme } from "../../theme";
+import { generateReactCalendarStyle, makeStyles, theme } from "../../theme";
 
 interface ProfileProps {
   userInfo: User;
@@ -359,6 +359,7 @@ const Profile: React.FC<ProfileProps> = ({ userInfo }) => {
             Selecting {chartDateField} date as {tempChartDate}
             <div>
               <Calendar
+                className={classes.calendar}
                 onClickDay={(e: any) =>
                   setTempChartDate(e.toLocaleDateString())
                 }
@@ -366,21 +367,7 @@ const Profile: React.FC<ProfileProps> = ({ userInfo }) => {
                 defaultValue={new Date(tempChartDate)}
               />
               <style>
-                {`
-                  .react-calendar__tile {
-                      display: flex;
-                      flex-direction: row;
-                      justify-content: center;
-                  }
-
-                  .react-calendar__tile--now {
-                      border-color: ${theme.colors.periwinkle50};
-                  }
-
-                  .react-calendar__tile--active {
-                      border-color: ${theme.colors.gold};
-                  }
-                `}
+                {generateReactCalendarStyle()}
               </style>
             </div>
             <div className={classes.button} onClick={commitChartDate}>
@@ -681,6 +668,11 @@ const useStyles = makeStyles((theme) => ({
     bottom: 0,
     margin: "auto",
     zIndex: 150,
+  },
+  calendar: {
+    width: "70vw",
+    height: "30vh",
+    margin: "20px 0",
   },
   selectPopup: {
     display: "flex",
