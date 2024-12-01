@@ -192,6 +192,9 @@ const useStyles = makeStyles((theme) => ({
     "&.picture": {
       width: "30px",
     },
+    "&:hover": {
+      opacity: "0.8",
+    },
   },
   container: {
     border: "1px solid black",

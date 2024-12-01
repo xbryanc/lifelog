@@ -100,19 +100,6 @@ export enum Span {
   YEAR = "year",
 }
 
-export const KONAMI_CODE = Object.freeze([
-  "arrowup",
-  "arrowup",
-  "arrowdown",
-  "arrowdown",
-  "arrowleft",
-  "arrowright",
-  "arrowleft",
-  "arrowright",
-  "b",
-  "a",
-]);
-
 export const MISC_TAG = "MISC";
 
 export const EMPTY_TRANSACTION = (): Transaction => ({

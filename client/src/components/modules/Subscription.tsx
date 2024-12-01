@@ -10,11 +10,11 @@ import {
   formatFrequency,
   formatSubTime,
 } from "../../../../helpers";
-import { makeStyles, theme } from "../../theme";
+import { makeStyles, generateReactCalendarStyle } from "../../theme";
 
 interface SubscriptionProps {
   odd: boolean;
-  highlight?: boolean;
+  inactive?: boolean;
   subscription: Subscription;
   editSubscription: (s: Subscription) => void;
   deleteSubscription: () => void;
@@ -25,7 +25,7 @@ interface SubscriptionProps {
 
 const Subscription: React.FC<SubscriptionProps> = ({
   odd,
-  highlight,
+  inactive,
   subscription,
   editSubscription,
   deleteSubscription,
@@ -144,7 +144,7 @@ const Subscription: React.FC<SubscriptionProps> = ({
   };
 
   return (
-    <div className={clsx(classes.entry, { odd: odd && !editing, highlight: !!highlight && !editing })}>
+    <div className={clsx(classes.entry, { odd: odd && !editing, inactive: !!inactive && !editing })}>
       {!showSelect ? null : (
         <div className={classes.selectContainer} onClick={commitDate}>
           <div
@@ -154,26 +154,13 @@ const Subscription: React.FC<SubscriptionProps> = ({
             Selecting {endpointName} date as {endpointDate}
             <div>
               <Calendar
+                className={classes.calendar}
                 onClickDay={(e: any) => setEndpointDate(e.toLocaleDateString())}
                 calendarType="US"
                 defaultValue={new Date(endpointDate)}
               />
               <style>
-                {`
-                  .react-calendar__tile {
-                      display: flex;
-                      flex-direction: row;
-                      justify-content: center;
-                  }
-
-                  .react-calendar__tile--now {
-                      border-color: ${theme.colors.periwinkle50};
-                  }
-
-                  .react-calendar__tile--active {
-                      border-color: ${theme.colors.gold};
-                  }
-                `}
+                {generateReactCalendarStyle()}
               </style>
             </div>
             <div
@@ -329,6 +316,11 @@ const useStyles = makeStyles((theme) => ({
     borderBottom: "1px solid black",
     padding: "0px 3px",
   },
+  calendar: {
+    width: "70vw",
+    height: "30vh",
+    margin: "20px 0",
+  },
   location: {
     cursor: "pointer",
     flexGrow: 0,
@@ -374,12 +366,9 @@ const useStyles = makeStyles((theme) => ({
     "&.odd": {
       backgroundColor: theme.colors.coolGray20,
     },
-    "&.highlight": {
-      backgroundColor: theme.colors.periwinkle50,
+    "&.inactive": {
+      opacity: "0.2",
     },
-    "&.odd.highlight": {
-      backgroundColor: theme.colors.periwinkle75,
-    }
   },
   body: {
     padding: "5px 10px",
@@ -494,6 +483,9 @@ const useStyles = makeStyles((theme) => ({
     },
     "&.picture": {
       width: "30px",
+    },
+    "&:hover": {
+      opacity: "0.8",
     },
   },
 }));

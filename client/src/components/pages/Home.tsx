@@ -6,15 +6,15 @@ import clsx from "clsx";
 
 import {
   EMPTY_TRANSACTION,
+  EMPTY_SUBSCRIPTION,
   STAR_MAX,
-  KONAMI_CODE,
   User,
   Transaction,
   Subscription,
   Diary,
   FinanceLog,
 } from "../../../../defaults";
-import { subApplies, sortByDate } from "../../../../helpers";
+import { subApplies, sortByDate, stripId } from "../../../../helpers";
 import TransactionComponent from "../modules/Transaction";
 import SubscriptionComponent from "../modules/Subscription";
 import { generateReactCalendarStyle, makeStyles } from "../../theme";
@@ -36,14 +36,12 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
   const [subscriptions, setSubscriptions] = useState(
     _.cloneDeep(userInfo.subscriptions)
   );
+  const [showAllSubs, setShowAllSubs] = useState(false);
   const [tags, setTags] = useState(_.cloneDeep(userInfo.tags));
   const [tagEdits, setTagEdits] = useState<Record<string, string>>({});
   const [editCounts, setEditCounts] = useState(0);
   const [newTag, setNewTag] = useState("");
   const [selectedTag, _setSelectedTag] = useState("");
-  const [keys, setKeys] = useState<string[]>([]);
-  const [konami, setKonami] = useState(false);
-  const [bulkPaste, setBulkPaste] = useState("");
   const [hoverDetails, setHoverDetails] = useState(false);
   const [searchString, setSearchString] = useState("");
   const [searchResults, setSearchResults] = useState<string[]>([]);
@@ -73,15 +71,6 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
     () => finance[selectedDate] ?? [],
     [finance, selectedDate]
   );
-
-  useEffect(() => {
-    document.title = "Home";
-    calendarChange(selectedDate);
-    window.addEventListener("keydown", handleKeyDown);
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, []);
 
   useEffect(() => {
     (async () => {
@@ -232,6 +221,13 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
     return !_.isEqual(finance[dateOfInterest], originalFinance[dateOfInterest]);
   };
 
+  const subsChanged = useMemo(
+    () => !_.isEqual(subscriptions.map(stripId), userInfo.subscriptions.map(stripId)),
+    [subscriptions, userInfo.subscriptions]
+  );
+
+  const toggleShowAllSubs = () => setShowAllSubs(!showAllSubs);
+
   const tagsChanged = () => {
     return !_.isEqual(tags, userInfo.tags);
   };
@@ -330,6 +326,14 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
     setFinance(newFinance);
   };
 
+  const addSub = () => {
+    const newSubscriptions = _.cloneDeep(subscriptions);
+    const newSub = EMPTY_SUBSCRIPTION();
+    newSub.tags = [];
+    newSubscriptions.push(newSub);
+    setSubscriptions(newSubscriptions);
+  };
+
   const deleteSub = (ind: number) => {
     const newSubscriptions = _.cloneDeep(subscriptions);
     newSubscriptions.splice(ind, 1);
@@ -402,27 +406,6 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
     setDisplayProductivity(productivity);
   };
 
-  const saveBulk = () => {
-    const newDiary = _.cloneDeep(diary);
-    const dailyEntries = bulkPaste.split("\n\n");
-    dailyEntries.forEach((dailyLog) => {
-      const body = dailyLog.split("\n");
-      const header = body.splice(0, 1)[0];
-      const tokens = header.split(" ");
-      const day = tokens[0];
-      const rating = parseInt(tokens[1].substring(1));
-      const productivity = parseInt(tokens[2].substring(1));
-      newDiary[day] = {
-        description: body.join("\n"),
-        rating,
-        productivity,
-      };
-    });
-    setDiary(newDiary);
-    calendarChange(selectedDate);
-    toggleKonami();
-  };
-
   const saveInfo = () => {
     if (editCounts) {
       return;
@@ -450,81 +433,45 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
     });
   };
 
-  const handleKeyDown = (event: any) => {
-    if (event.key === "Escape") {
-      selectTag("");
-    }
-    let newKeys = _.cloneDeep(keys);
-    newKeys.push(event.key.toLowerCase());
-    newKeys = newKeys.slice(Math.max(newKeys.length - KONAMI_CODE.length, 0));
-    setKeys(newKeys);
-    if (JSON.stringify(keys) == JSON.stringify(KONAMI_CODE)) {
-      toggleKonami();
-    }
-  };
-
-  const toggleKonami = () => {
-    setKonami(!konami);
-  };
-
   return (
     <div className={classes.homeContainer}>
-      {konami && (
-        <div className={classes.homePopupContainer} onClick={toggleKonami}>
-          <div
-            className={classes.homePopup}
-            onClick={(e) => e.stopPropagation()}
-          >
-            Enter bulk entries:
-            <textarea
-              className={classes.bulkEntry}
-              name="bulkEntry"
-              id="bulkEntry"
-              onChange={(e) => setBulkPaste(e.target.value)}
-            />
-            <div className={classes.button} onClick={saveBulk}>
-              Copy Over
-            </div>
-          </div>
-        </div>
-      )}
-      <div>
-        <Calendar
-          className={classes.calendar}
-          onClickDay={(e: any) => calendarChange(e.toLocaleDateString())}
-          onActiveStartDateChange={(e: any) =>
-            fetchYear(new Date(e.activeStartDate).getFullYear().toString())
-          }
-          calendarType="US"
-          tileClassName={(properties: any) => {
-            const dateKey = properties.date.toLocaleDateString();
-            const classNames: string[] = [];
-            if (properties.view === "month" && _.hasIn(diary, dateKey)) {
-              const ratings = _.filter([diary[dateKey].rating, diary[dateKey].productivity], num => !!num);
-              if (!ratings.length) {
-                classNames.push(classes.rating0);
-              } else {
-                const geometricRating = Math.pow(_.reduce(ratings, (prod, num) => prod * num, 1), 1 / ratings.length);
-                classNames.push(classes[`rating${Math.round(geometricRating)}` as keyof typeof classes]);
-              }
-            } else {
-              classNames.push(classes.calendarCell);
-            }
-            if (incompleteDates.includes(dateKey)) {
-              classNames.push(classes.calendarIncomplete);
-              if (hoverDetails) {
-                classNames.push("details");
-              }
-            }
-            return clsx(...classNames);
-          }}
-          value={new Date(selectedDate)}
-        />
-        <style>
-          {generateReactCalendarStyle()}
-        </style>
-      </div>
       <div className={classes.entryContainer}>
+        <div>
+          <Calendar
+            className={classes.calendar}
+            onClickDay={(e: any) => calendarChange(e.toLocaleDateString())}
+            onActiveStartDateChange={(e: any) =>
+              fetchYear(new Date(e.activeStartDate).getFullYear().toString())
+            }
+            calendarType="US"
+            tileClassName={(properties: any) => {
+              const dateKey = properties.date.toLocaleDateString();
+              const classNames: string[] = [];
+              if (properties.view === "month" && _.hasIn(diary, dateKey)) {
+                const ratings = _.filter([diary[dateKey].rating, diary[dateKey].productivity], num => !!num);
+                if (!ratings.length) {
+                  classNames.push(classes.rating0);
+                } else {
+                  const geometricRating = Math.pow(_.reduce(ratings, (prod, num) => prod * num, 1), 1 / ratings.length);
+                  classNames.push(classes[`rating${Math.round(geometricRating)}` as keyof typeof classes]);
+                }
+              } else {
+                classNames.push(classes.calendarCell);
+              }
+              if (incompleteDates.includes(dateKey)) {
+                classNames.push(classes.calendarIncomplete);
+                if (hoverDetails) {
+                  classNames.push("details");
+                }
+              }
+              return clsx(...classNames);
+            }}
+            value={new Date(selectedDate)}
+          />
+          <style>
+            {generateReactCalendarStyle()}
+          </style>
+        </div>
         <div className={classes.diaryContainer}>
           <div>
             <div className={classes.searchHeader}>
@@ -633,126 +580,150 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
             Save
           </div>
         </div>
-        <div className={classes.finContainer}>
-          <div className={classes.finTagsContainer}>
-            <div className={classes.finHeader}>
-              <div className={classes.finHeaderMain}>
-                TAGS
-                {tagsChanged() ? (
-                  <div className={classes.changed}>*</div>
-                ) : null}
-              </div>
+      </div>
+      <div className={classes.finContainer}>
+        <div className={classes.finTagsContainer}>
+          <div className={classes.finHeader}>
+            <div className={classes.finHeaderMain}>
+              TAGS
+              {tagsChanged() ? (
+                <div className={classes.changed}>*</div>
+              ) : null}
             </div>
-            <div className={classes.finTagsList}>
-              {tags.map((el) => {
-                const editing = _.hasIn(tagEdits, el);
-                return (
-                  <div key={el} className={classes.finTag}>
-                    <div
-                      className={clsx(classes.finTagName, {
-                        selected: el == selectedTag,
-                      })}
-                      onClick={() => selectTag(el)}
-                    >
-                      {editing ? (
-                        <input
-                          type="text"
-                          name="tagEditEntry"
-                          id="tagEditEntry"
-                          value={tagEdits[el]}
-                          onChange={(e) => editTag(el, e.target.value)}
-                          onClick={(e) => e.stopPropagation()}
-                        />
-                      ) : (
-                        el
-                      )}
-                    </div>
-                    <div className={classes.finTagIcons}>
-                      <img
-                        className={clsx(classes.smallButton, "picture")}
-                        onClick={
-                          editing
-                            ? () => changeTag(el, false)
-                            : () => editTag(el, el)
-                        }
-                        src={editing ? "/media/check.svg" : "/media/pencil.svg"}
+          </div>
+          <div className={classes.finTagsList}>
+            {tags.map((el) => {
+              const editing = _.hasIn(tagEdits, el);
+              return (
+                <div key={el} className={classes.finTag}>
+                  <div
+                    className={clsx(classes.finTagName, {
+                      selected: el == selectedTag,
+                    })}
+                    onClick={() => selectTag(el)}
+                  >
+                    {editing ? (
+                      <input
+                        type="text"
+                        name="tagEditEntry"
+                        id="tagEditEntry"
+                        value={tagEdits[el]}
+                        onChange={(e) => editTag(el, e.target.value)}
+                        onClick={(e) => e.stopPropagation()}
                       />
-                      <div
-                        className={clsx(classes.smallButton, "text red")}
-                        onClick={() => changeTag(el, true)}
-                      >
-                        x
-                      </div>
+                    ) : (
+                      el
+                    )}
+                  </div>
+                  <div className={classes.finTagIcons}>
+                    <img
+                      className={clsx(classes.smallButton, "picture")}
+                      onClick={
+                        editing
+                          ? () => changeTag(el, false)
+                          : () => editTag(el, el)
+                      }
+                      src={editing ? "/media/check.svg" : "/media/pencil.svg"}
+                    />
+                    <div
+                      className={clsx(classes.smallButton, "text red")}
+                      onClick={() => changeTag(el, true)}
+                    >
+                      x
                     </div>
                   </div>
-                );
+                </div>
+              );
+            })}
+          </div>
+          <div className={classes.finTagCreate}>
+            <div
+              className={clsx(classes.smallButton, "text", {
+                green: tagValid(newTag),
               })}
+              onClick={addTag}
+            >
+              +
             </div>
-            <div className={classes.finTagCreate}>
+            <input
+              type="text"
+              name="tagEntry"
+              id="tagEntry"
+              placeholder="New Tag"
+              value={newTag}
+              onChange={(e) => setNewTag(e.target.value)}
+            />
+          </div>
+        </div>
+        <div className={classes.subContainer}>
+          <div className={classes.subTitle}>
+            <div className={classes.subTitleMain}>
+              SUBSCRIPTIONS
+              {!!subsChanged ? <div className={classes.changed}>*</div> : null}
+            </div>
+            <div className={classes.subTitleSecondary}>
               <div
-                className={clsx(classes.smallButton, "text", {
-                  green: tagValid(newTag),
-                })}
-                onClick={addTag}
+                className={clsx(classes.smallButton, "text")}
+                onClick={toggleShowAllSubs}
+              >
+                SHOW {showAllSubs ? "RELEVANT" : "ALL"}
+              </div>
+              <div
+                className={clsx(classes.smallButton, "text green")}
+                onClick={addSub}
               >
                 +
               </div>
-              <input
-                type="text"
-                name="tagEntry"
-                id="tagEntry"
-                placeholder="New Tag"
-                value={newTag}
-                onChange={(e) => setNewTag(e.target.value)}
-              />
             </div>
           </div>
-          <div className={classes.finTransactionContainer}>
-            <div className={classes.finHeader}>
-              <div className={classes.finHeaderMain}>
-                TRANSACTIONS
-                {financeChanged(selectedDate) ? (
-                  <div className={classes.changed}>*</div>
-                ) : null}
-              </div>
-              <div className={classes.finHeaderSecondary}>
-                <div
-                  className={clsx(classes.smallButton, "text green")}
-                  onClick={addTransaction}
-                >
-                  +
-                </div>
-              </div>
-            </div>
-            <div>
-              {subscriptions.map((sub, ind) =>
-                !subApplies(sub, selectedDate) ? null : (
+          <div>
+            {subscriptions.map((el, ind) =>
+              showAllSubs || subApplies(el, selectedDate)
+                ? (
                   <SubscriptionComponent
-                    key={sub._id}
                     odd={ind % 2 == 1}
-                    highlight
-                    subscription={sub}
+                    inactive={!subApplies(el, selectedDate)}
+                    key={el._id}
+                    subscription={el}
                     editSubscription={(s: Subscription) => editSub(ind, s)}
                     deleteSubscription={() => deleteSub(ind)}
                     selectedTag={selectedTag}
                     incrementEdits={() => setEditCounts((ec) => ec + 1)}
                     decrementEdits={() => setEditCounts((ec) => ec - 1)}
                   />
-                )
-              )}
-              {transactions.map((el, ind) => (
-                <TransactionComponent
-                  key={el.id}
-                  odd={(ind + subscriptions.length) % 2 == 1}
-                  transaction={el}
-                  editTransaction={(t: Transaction) => editTransaction(ind, t)}
-                  deleteTransaction={() => deleteTransaction(ind)}
-                  selectedTag={selectedTag}
-                  incrementEdits={() => setEditCounts((ec) => ec + 1)}
-                  decrementEdits={() => setEditCounts((ec) => ec - 1)}
-                />
-              ))}
+                ) : null)}
+          </div>
+        </div>
+        <div className={classes.finTransactionContainer}>
+          <div className={classes.finHeader}>
+            <div className={classes.finHeaderMain}>
+              TRANSACTIONS
+              {financeChanged(selectedDate) ? (
+                <div className={classes.changed}>*</div>
+              ) : null}
             </div>
+            <div className={classes.finHeaderSecondary}>
+              <div
+                className={clsx(classes.smallButton, "text green")}
+                onClick={addTransaction}
+              >
+                +
+              </div>
+            </div>
+          </div>
+          <div>
+            {transactions.map((el, ind) => (
+              <TransactionComponent
+                key={el.id}
+                odd={(ind + subscriptions.length) % 2 == 1}
+                transaction={el}
+                editTransaction={(t: Transaction) => editTransaction(ind, t)}
+                deleteTransaction={() => deleteTransaction(ind)}
+                selectedTag={selectedTag}
+                incrementEdits={() => setEditCounts((ec) => ec + 1)}
+                decrementEdits={() => setEditCounts((ec) => ec - 1)}
+              />
+            ))}
           </div>
         </div>
       </div>
@@ -805,27 +776,30 @@ const useStyles = makeStyles((theme) => ({
     "&.picture": {
       width: "30px",
     },
+    "&:hover": {
+      opacity: "0.8",
+    },
   },
   homeContainer: {
     display: "flex",
     paddingTop: "8vh",
     width: "100%",
     height: "100%",
-    flexDirection: "column",
-    alignItems: "center",
+    flexDirection: "row",
     justifyContent: "center",
   },
   entryContainer: {
     display: "flex",
-    flexDirection: "row",
+    flexDirection: "column",
     justifyContent: "center",
-    width: "100%",
-    padding: "0 5vw",
+    gap: theme.spacing(1),
+    width: "50%",
+    marginTop: theme.spacing(3),
+    marginLeft: theme.spacing(3),
   },
   diaryContainer: {
-    width: "50%",
+    width: "100%",
     height: "100%",
-    margin: "5px",
   },
   finContainer: {
     display: "flex",
@@ -833,7 +807,9 @@ const useStyles = makeStyles((theme) => ({
     gap: theme.spacing(1),
     width: "50%",
     height: "100%",
-    margin: "5px",
+    marginTop: theme.spacing(3),
+    marginRight: theme.spacing(3),
+    padding: `0 ${theme.spacing(3)}px`,
   },
   diaryHeader: {
     display: "flex",
@@ -903,6 +879,29 @@ const useStyles = makeStyles((theme) => ({
       backgroundColor: theme.colors.green400,
     },
   },
+  subContainer: {
+    marginTop: theme.spacing(1),
+    marginBottom: theme.spacing(1),
+    border: "1px solid black",
+    borderRadius: "5px",
+    padding: "5px",
+  },
+  subTitle: {
+    display: "flex",
+    flexDirection: "row",
+  },
+  subTitleMain: {
+    display: "flex",
+    flexDirection: "row",
+    flexGrow: 1,
+  },
+  subTitleSecondary: {
+    display: "flex",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: theme.spacing(1),
+    flexGrow: 0,
+  },
   finTransactionContainer: {
     border: "1px solid black",
     borderRadius: "5px",
@@ -954,10 +953,6 @@ const useStyles = makeStyles((theme) => ({
     width: "100%",
     height: "30vh",
   },
-  bulkEntry: {
-    width: "60vw",
-    height: "50vh",
-  },
   diaryStars: {
     width: "1.5vw",
     "&.red": {
@@ -971,8 +966,7 @@ const useStyles = makeStyles((theme) => ({
     },
   },
   calendar: {
-    width: "70vw",
-    margin: "20px 0",
+    width: "100%",
   },
   calendarCell: {
     padding: 0,
@@ -1027,33 +1021,6 @@ const useStyles = makeStyles((theme) => ({
       fontWeight: "bold",
       textDecoration: "underline",
     },
-  },
-  homePopupContainer: {
-    position: "fixed",
-    width: "100%",
-    height: "100%",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    margin: "auto",
-    zIndex: 150,
-  },
-  homePopup: {
-    display: "flex",
-    flexDirection: "column",
-    position: "absolute",
-    left: "10%",
-    right: "10%",
-    top: "10%",
-    bottom: "10%",
-    margin: "auto",
-    backgroundColor: "whitesmoke",
-    border: `1px solid ${theme.colors.coolGray80}`,
-    borderRadius: "5px",
-    boxShadow: "0 4px 8px rgba(0, 0, 0, 0.2), 0 6px 20px rgba(0, 0, 0, 0.2)",
-    justifyContent: "center",
-    alignItems: "center",
   },
   searchString: {
     flexGrow: 1,

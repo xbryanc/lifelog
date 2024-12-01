@@ -11,7 +11,7 @@ interface RootProps {
 const Root: React.FC<RootProps> = ({ userInfo }) => {
   const classes = useStyles();
   useEffect(() => {
-    document.title = "Welcome!";
+    document.title = "Lifelog";
   }, []);
 
   return (

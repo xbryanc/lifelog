@@ -15,14 +15,12 @@ import {
 } from "recharts";
 import {
   EMPTY_GOAL,
-  EMPTY_SUBSCRIPTION,
   NEW_FRIEND,
   FinanceLog,
   Friend,
   Goal,
   GoalStatus,
   Span,
-  Subscription,
   User,
   MISC_TAG,
 } from "../../../../defaults";
@@ -35,7 +33,6 @@ import {
   stripId,
   getTransactionsWithinDates,
 } from "../../../../helpers";
-import SubscriptionComponent from "../modules/Subscription";
 import GoalComponent from "../modules/Goal";
 import FriendComponent from "../modules/Friend";
 import { generateReactCalendarStyle, makeStyles, theme } from "../../theme";
@@ -60,9 +57,6 @@ const Profile: React.FC<ProfileProps> = ({ userInfo }) => {
   const classes = useStyles();
   const [selectedTag, _setSelectedTag] = useState("");
   const [finance, setFinance] = useState<FinanceLog>({});
-  const [subscriptions, setSubscriptions] = useState(
-    _.cloneDeep(userInfo.subscriptions)
-  );
   const [chartStart, setChartStart] = useState(
     new Date().toLocaleDateString()
   );
@@ -94,11 +88,6 @@ const Profile: React.FC<ProfileProps> = ({ userInfo }) => {
   }));
 
   const [editCounts, setEditCounts] = useState(0);
-
-  const subsChanged = useMemo(
-    () => !_.isEqual(subscriptions.map(stripId), userInfo.subscriptions.map(stripId)),
-    [subscriptions, userInfo.subscriptions]
-  );
 
   const goalsChanged = useMemo(
     () => !_.isEqual(goals, userInfo.goals),
@@ -174,7 +163,7 @@ const Profile: React.FC<ProfileProps> = ({ userInfo }) => {
     const startDate = new Date(chartStart);
     const endDate = new Date(chartEnd);
 
-    const { total, itemized, transactionList } = getTransactionsWithinDates(finance, subscriptions, startDate, endDate);
+    const { total, itemized, transactionList } = getTransactionsWithinDates(finance, userInfo.subscriptions, startDate, endDate);
 
     const pieData: PieEntry[] = Object.entries(itemized).map(
       ([key, value]) => ({
@@ -184,7 +173,7 @@ const Profile: React.FC<ProfileProps> = ({ userInfo }) => {
       })
     );
     return { total, transactionList, pieData };
-  }, [chartStart, chartEnd, subscriptions, finance]);
+  }, [chartStart, chartEnd, userInfo.subscriptions, finance]);
 
   const getHistoricalSpending = useCallback(() => {
     const graphData: HistogramEntry[] = [];
@@ -196,7 +185,7 @@ const Profile: React.FC<ProfileProps> = ({ userInfo }) => {
       }
       const calcPrevDate = new Date(prevDate);
       calcPrevDate.setDate(calcPrevDate.getDate() + 1);
-      const { itemized } = getTransactionsWithinDates(finance, subscriptions, calcPrevDate, curDate);
+      const { itemized } = getTransactionsWithinDates(finance, userInfo.subscriptions, calcPrevDate, curDate);
       const total = _.sum(graphTags.map(tag => _.get(itemized, tag, 0)));
       graphData.unshift({
         range: `${calcPrevDate.toLocaleDateString()} - ${curDate.toLocaleDateString()}`,
@@ -205,7 +194,7 @@ const Profile: React.FC<ProfileProps> = ({ userInfo }) => {
       curDate = prevDate;
     }
     return { graphData };
-  }, [subscriptions, finance, graphFrequency, graphFrequencyGap, graphIndices, graphTags]);
+  }, [userInfo.subscriptions, finance, graphFrequency, graphFrequencyGap, graphIndices, graphTags]);
 
   const addGoal = () => {
     const newGoals = _.cloneDeep(goals);
@@ -265,26 +254,6 @@ const Profile: React.FC<ProfileProps> = ({ userInfo }) => {
     setGoalsKey(`${Math.floor(newValue / 4)}-${newValue % 4}`);
   };
 
-  const addSub = () => {
-    const newSubscriptions = _.cloneDeep(subscriptions);
-    const newSub = EMPTY_SUBSCRIPTION();
-    newSub.tags = [];
-    newSubscriptions.push(newSub);
-    setSubscriptions(newSubscriptions);
-  };
-
-  const deleteSub = (ind: number) => {
-    const newSubscriptions = _.cloneDeep(subscriptions);
-    newSubscriptions.splice(ind, 1);
-    setSubscriptions(newSubscriptions);
-  };
-
-  const editSub = (ind: number, newSub: Subscription) => {
-    const newSubscriptions = _.cloneDeep(subscriptions);
-    newSubscriptions[ind] = newSub;
-    setSubscriptions(newSubscriptions);
-  };
-
   const selectChartDate = (fieldName: "start" | "end") => {
     const relevantDate = fieldName === "start" ? chartStart : chartEnd;
     setChartDateField(fieldName);
@@ -306,7 +275,6 @@ const Profile: React.FC<ProfileProps> = ({ userInfo }) => {
       return;
     }
     const body = {
-      subscriptions,
       goals,
       friends,
     };
@@ -376,52 +344,6 @@ const Profile: React.FC<ProfileProps> = ({ userInfo }) => {
           </div>
         </div>
       )}
-      <div className={classes.subContainer}>
-        <div className={classes.subTitle}>
-          <div className={classes.subTitleMain}>
-            SUBSCRIPTIONS
-            {!!subsChanged ? <div className={classes.changed}>*</div> : null}
-          </div>
-          <div className={classes.subTitleSecondary}>
-            <div
-              className={clsx(classes.smallButton, "text green")}
-              onClick={addSub}
-            >
-              +
-            </div>
-          </div>
-        </div>
-        <div className={classes.finTagsList}>
-          {allTags.map((el) => {
-            return (
-              <div key={el} className={classes.finTag}>
-                <div
-                  className={clsx(classes.finTagName, {
-                    selected: el == selectedTag,
-                  })}
-                  onClick={() => selectTag(el)}
-                >
-                  {el}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-        <div>
-          {subscriptions.map((el, ind) => (
-            <SubscriptionComponent
-              odd={ind % 2 == 1}
-              key={el._id}
-              subscription={el}
-              editSubscription={(s: Subscription) => editSub(ind, s)}
-              deleteSubscription={() => deleteSub(ind)}
-              selectedTag={selectedTag}
-              incrementEdits={() => setEditCounts((ec) => ec + 1)}
-              decrementEdits={() => setEditCounts((ec) => ec - 1)}
-            />
-          ))}
-        </div>
-      </div>
       <div className={classes.goalContainer}>
         <div className={classes.goalTitle}>
           <div className={classes.goalTitleMain}>
@@ -639,8 +561,8 @@ const Profile: React.FC<ProfileProps> = ({ userInfo }) => {
             ))}
           </div>
           <div className={classes.graphTags}>
-            <div className={classes.smallButton} onClick={selectAllGraphTags}>ALL</div>
-            <div className={classes.smallButton} onClick={deselectAllGraphTags}>NONE</div>
+            <div className={clsx(classes.smallButton, "text")} onClick={selectAllGraphTags}>ALL</div>
+            <div className={clsx(classes.smallButton, "text")} onClick={deselectAllGraphTags}>NONE</div>
           </div>
           <ResponsiveContainer className={classes.histogramContainer} width="100%" height={400}>
             <BarChart data={graphData}>
@@ -733,6 +655,9 @@ const useStyles = makeStyles((theme) => ({
     },
     "&.picture": {
       width: "30px",
+    },
+    "&:hover": {
+      opacity: "0.8",
     },
   },
   profileContainer: {
@@ -847,26 +772,6 @@ const useStyles = makeStyles((theme) => ({
     display: "flex",
     flexDirection: "row",
     justifyContent: "center",
-  },
-  subContainer: {
-    marginTop: theme.spacing(1),
-    marginBottom: theme.spacing(1),
-    border: "1px solid black",
-    borderRadius: "5px",
-    padding: "5px",
-    width: "80%",
-  },
-  subTitle: {
-    display: "flex",
-    flexDirection: "row",
-  },
-  subTitleMain: {
-    display: "flex",
-    flexDirection: "row",
-    flexGrow: 1,
-  },
-  subTitleSecondary: {
-    flexGrow: 0,
   },
   goalContainer: {
     border: "1px solid black",
