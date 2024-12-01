@@ -7,6 +7,7 @@ import NavBar from "./modules/NavBar";
 import Root from "./pages/Root";
 import Home from "./pages/Home";
 import Profile from "./pages/Profile";
+import Spending from "./pages/Spending";
 import { User } from "../../../defaults";
 import { theme } from "../theme";
 
@@ -66,6 +67,11 @@ const App: React.FC<AppProps> = () => {
           exact
           path="/profile"
           render={(props) => <Profile {...props} userInfo={userInfo} />}
+        />
+        <Route
+          exact
+          path="/spending"
+          render={(props) => <Spending {...props} userInfo={userInfo} />}
         />
       </Switch>
     </ThemeProvider>

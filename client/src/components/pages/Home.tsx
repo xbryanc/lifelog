@@ -72,6 +72,15 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
     [finance, selectedDate]
   );
 
+
+  useEffect(() => {
+    document.title = "Home";
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
+
   useEffect(() => {
     (async () => {
       const newIncompleteDates = await (
@@ -309,6 +318,12 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
 
   const selectTag = (tag: string) => {
     _setSelectedTag(selectedTag === tag ? "" : tag);
+  };
+
+  const handleKeyDown = (event: any) => {
+    if (event.key === "Escape") {
+      selectTag("");
+    }
   };
 
   const addTransaction = () => {
@@ -670,7 +685,7 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
               </div>
               <div
                 className={clsx(classes.smallButton, "text green")}
-                onClick={addSub}
+                onClick={() => { addSub(); setShowAllSubs(true); }}
               >
                 +
               </div>

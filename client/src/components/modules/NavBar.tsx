@@ -44,6 +44,14 @@ const NavBar: React.FC<NavBarProps> = ({ userInfo, logout }) => {
             >
               Profile
             </Link>
+            <Link
+              to="/spending"
+              className={clsx(classes.link, {
+                [classes.navCurrent]: path.startsWith("/spending"),
+              })}
+            >
+              My Spending
+            </Link>
             <a className={classes.link} href="/logout" onClick={logout}>
               Logout
             </a>

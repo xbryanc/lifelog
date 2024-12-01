@@ -59,7 +59,7 @@ app.get("/logout", function (req, res) {
 app.use("/api", api);
 app.use(express.static(publicPath));
 
-app.get(["/", "/home", "/profile"], function (req, res) {
+app.get(["/", "/home", "/profile", "/spending"], function (req, res) {
   res.sendFile(path.join(publicPath, "index.html"));
 });
 
