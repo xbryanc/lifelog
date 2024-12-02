@@ -5,7 +5,6 @@ import clsx from "clsx";
 import {
   EMPTY_GOAL,
   NEW_FRIEND,
-  FinanceLog,
   Friend,
   Goal,
   GoalStatus,
@@ -26,7 +25,6 @@ interface ProfileProps {
 const Profile: React.FC<ProfileProps> = ({ userInfo }) => {
   const classes = useStyles();
 
-  const [finance, setFinance] = useState<FinanceLog>({});
   const [goalsKey, setGoalsKey] = useState(
     toGoalsKey(new Date().toLocaleDateString())
   );
@@ -51,20 +49,6 @@ const Profile: React.FC<ProfileProps> = ({ userInfo }) => {
 
   useEffect(() => {
     document.title = "Profile";
-  }, []);
-
-  useEffect(() => {
-    (async () => {
-      const finance: FinanceLog = {};
-      const allYears = await (await fetch("/api/all_years")).json();
-      for (const year of allYears) {
-        const newFinanceEntry = await (
-          await fetch(`/api/finance?year=${year}`)
-        ).json();
-        Object.assign(finance, newFinanceEntry);
-      }
-      setFinance(finance);
-    })();
   }, []);
 
   const addGoal = () => {

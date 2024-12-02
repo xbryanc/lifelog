@@ -135,6 +135,8 @@ router.post("/save_info", connect.ensureLoggedIn(), async (req, res) => {
     {
       tags: req.body.tags,
       subscriptions: req.body.subscriptions,
+      diary: undefined,
+      finance: undefined,
     }
   );
   res.status(200).json({});
