@@ -17,7 +17,7 @@ interface SubscriptionProps {
   inactive?: boolean;
   subscription: Subscription;
   editSubscription: (s: Subscription) => void;
-  deleteSubscription: () => void;
+  deleteSubscription: (id: string) => void;
   selectedTag: string;
   incrementEdits: () => void;
   decrementEdits: () => void;
@@ -283,7 +283,7 @@ const Subscription: React.FC<SubscriptionProps> = ({
           />
           <div
             className={clsx(classes.smallButton, "text red")}
-            onClick={deleteSubscription}
+            onClick={() => deleteSubscription(subscription._id)}
           >
             x
           </div>

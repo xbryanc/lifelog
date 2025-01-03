@@ -5,7 +5,7 @@ import connect from "connect-ensure-login";
 import User, { IUser } from "../models/user";
 import Diary from "../models/diary";
 import Finance from "../models/finance";
-import { Diary as DiaryType, FinanceLog, Span } from "../../defaults";
+import { Diary as DiaryType, FinanceLog, Span, SUB_HACK, Subscription } from "../../defaults";
 import { subtractSpan } from "../../helpers";
 import { v4 as uuidv4 } from "uuid";
 
@@ -130,11 +130,17 @@ router.post("/save_info", connect.ensureLoggedIn(), async (req, res) => {
     await curEntry.save();
   }
 
+  const subscriptions: Subscription[] = req.body.subscriptions;
+  subscriptions.forEach(subscription => {
+    if (subscription._id.startsWith(SUB_HACK)) {
+      delete subscription._id;
+    }
+  });
   await User.updateOne(
     { _id: req.user._id },
     {
       tags: req.body.tags,
-      subscriptions: req.body.subscriptions,
+      subscriptions,
     }
   );
   res.status(200).json({});

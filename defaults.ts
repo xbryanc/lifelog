@@ -110,7 +110,14 @@ export const EMPTY_TRANSACTION = (): Transaction => ({
   tags: [],
 });
 
+// in order for subscriptions to have unique IDs on creation in the frontend,
+// we need to randomly generate IDs in the frontend
+// these should be uniquely different in structure than mongo object IDs so that
+// we can sanitize them in the backend
+export const SUB_HACK = "SUB_HACK";
+
 export const EMPTY_SUBSCRIPTION = (): Subscription => ({
+  _id: SUB_HACK + uuidv4(),
   cost: 0,
   description: "",
   location: "",

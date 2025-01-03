@@ -72,6 +72,10 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
     [finance, selectedDate]
   );
 
+  const visibleSubscriptions = useMemo(
+    () => subscriptions.filter(sub => showAllSubs || subApplies(sub, selectedDate)),
+    [showAllSubs, subscriptions, selectedDate, subApplies],
+  );
 
   useEffect(() => {
     document.title = "Home";
@@ -98,8 +102,8 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
     diary: Diary;
     finance: FinanceLog;
   }> => {
-    const newDiary: Diary = _.cloneDeep(diary);
-    const newFinance: FinanceLog = _.cloneDeep(finance);
+    const newDiary: Diary = _.clone(diary);
+    const newFinance: FinanceLog = _.clone(finance);
     const allYears = await (await fetch("/api/all_years")).json();
     for (const year of allYears) {
       const { diary: newDiaryEntry, finance: newFinanceEntry } =
@@ -119,15 +123,19 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
       const newDiaryEntry = await (
         await fetch(`/api/diary?year=${year}`)
       ).json();
+
       newDiary = {
         ...diary,
         ...newDiaryEntry,
       };
-      setDiary(newDiary);
-      setOriginalDiary({
+      setDiary((diary) => ({
+        ...diary,
+        ...newDiaryEntry,
+      }));
+      setOriginalDiary((originalDiary) => ({
         ...originalDiary,
         ...newDiaryEntry,
-      });
+      }));
 
       const newFinanceEntry = await (
         await fetch(`/api/finance?year=${year}`)
@@ -136,13 +144,16 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
         ...finance,
         ...newFinanceEntry,
       };
-      setFinance(newFinance);
-      setOriginalFinance({
+      setFinance((finance) => ({
+        ...finance,
+        ...newFinanceEntry,
+      }));
+      setOriginalFinance((originalFinance) => ({
         ...originalFinance,
         ...newFinanceEntry,
-      });
+      }));
 
-      setQueriedYears([...queriedYears, year]);
+      setQueriedYears((queriedYears) => [...queriedYears, year]);
     }
     return { diary: newDiary, finance: newFinance };
   };
@@ -159,25 +170,29 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
   }, [selectedDate]);
 
   const handleChange = () => {
-    const newChangeSet = _.cloneDeep(changeSet);
-    const isDirty = diaryChanged(selectedDate) || financeChanged(selectedDate);
-    let ind = newChangeSet.indexOf(selectedDate);
-    if (ind >= 0 && !isDirty) {
-      newChangeSet.splice(ind, 1);
-    } else if (ind === -1 && isDirty) {
-      newChangeSet.push(selectedDate);
-    }
-    setChangeSet(newChangeSet.sort(sortByDate));
+    setChangeSet((changeSet) => {
+      const newChangeSet = [...changeSet];
+      const isDirty = diaryChanged(selectedDate) || financeChanged(selectedDate);
+      const ind = newChangeSet.indexOf(selectedDate);
+      if (ind >= 0 && !isDirty) {
+        newChangeSet.splice(ind, 1);
+      } else if (ind === -1 && isDirty) {
+        newChangeSet.push(selectedDate);
+      }
+      return newChangeSet.sort(sortByDate);
+    });
 
-    const newIncompleteDates = _.cloneDeep(incompleteDates);
-    const incomplete = transactions.some((t) => !t.cost || !t.tags.length);
-    ind = newIncompleteDates.indexOf(selectedDate);
-    if (ind >= 0 && !incomplete) {
-      newIncompleteDates.splice(ind, 1);
-    } else if (ind === -1 && incomplete) {
-      newIncompleteDates.push(selectedDate);
-    }
-    setIncompleteDates(newIncompleteDates.sort(sortByDate));
+    setIncompleteDates((incompleteDates) => {
+      const newIncompleteDates = [...incompleteDates];
+      const incomplete = transactions.some((t) => !t.cost || !t.tags.length);
+      const ind = newIncompleteDates.indexOf(selectedDate);
+      if (ind >= 0 && !incomplete) {
+        newIncompleteDates.splice(ind, 1);
+      } else if (ind === -1 && incomplete) {
+        newIncompleteDates.push(selectedDate);
+      }
+      return newIncompleteDates.sort(sortByDate);
+    });
   };
 
   const fetchNewRefresherDate = async () => {
@@ -242,9 +257,11 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
   };
 
   const editTransaction = (ind: number, newTransaction: Transaction) => {
-    const newFinance = _.cloneDeep(finance);
-    newFinance[selectedDate][ind] = newTransaction;
-    setFinance(newFinance);
+    setFinance((finance) => {
+      const newFinance = _.clone(finance);
+      newFinance[selectedDate][ind] = newTransaction;
+      return newFinance;
+    });
   };
 
   const tagValid = (tag: string) => {
@@ -255,16 +272,15 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
     if (!tagValid(newTag)) {
       return;
     }
-    const newTags = _.cloneDeep(tags);
-    newTags.push(newTag);
-    setTags(newTags);
+    setTags((tags) => [...tags, newTag]);
     setNewTag("");
   };
 
   const editTag = (tagName: string, newTag: string) => {
-    const newTagEdits = _.cloneDeep(tagEdits);
-    newTagEdits[tagName] = newTag;
-    setTagEdits(newTagEdits);
+    setTagEdits((tagEdits) => ({
+      ...tagEdits,
+      [tagName]: newTag,
+    }));
   };
 
   const changeTag = (tagName: string, toRemove: boolean) => {
@@ -327,37 +343,41 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
   };
 
   const addTransaction = () => {
-    const newFinance = _.cloneDeep(finance);
-    if (!_.hasIn(newFinance, selectedDate)) {
-      newFinance[selectedDate] = [];
-    }
-    newFinance[selectedDate].push(EMPTY_TRANSACTION());
-    setFinance(newFinance);
+    setFinance((finance) => {
+      const newFinance = _.clone(finance);
+      if (!_.hasIn(newFinance, selectedDate)) {
+        newFinance[selectedDate] = [];
+      }
+      newFinance[selectedDate].push(EMPTY_TRANSACTION());
+      return newFinance;
+    });
   };
 
   const deleteTransaction = (ind: number) => {
-    const newFinance = _.cloneDeep(finance);
-    newFinance[selectedDate].splice(ind, 1);
-    setFinance(newFinance);
+    setFinance((finance) => {
+      const newFinance = _.clone(finance);
+      newFinance[selectedDate].splice(ind, 1);
+      return newFinance;
+    });
   };
 
   const addSub = () => {
-    const newSubscriptions = _.cloneDeep(subscriptions);
-    const newSub = EMPTY_SUBSCRIPTION();
-    newSub.tags = [];
-    newSubscriptions.push(newSub);
+    setSubscriptions((subscriptions) => [
+      ...subscriptions,
+      {
+        ...EMPTY_SUBSCRIPTION(),
+        tags: [],
+      }
+    ]);
+  };
+
+  const deleteSub = (id: string) => {
+    const newSubscriptions = subscriptions.filter(sub => sub._id !== id);
     setSubscriptions(newSubscriptions);
   };
 
-  const deleteSub = (ind: number) => {
-    const newSubscriptions = _.cloneDeep(subscriptions);
-    newSubscriptions.splice(ind, 1);
-    setSubscriptions(newSubscriptions);
-  };
-
-  const editSub = (ind: number, newSub: Subscription) => {
-    const newSubscriptions = _.cloneDeep(subscriptions);
-    newSubscriptions[ind] = newSub;
+  const editSub = (newSub: Subscription) => {
+    const newSubscriptions = subscriptions.map(sub => sub._id === newSub._id ? newSub : sub);
     setSubscriptions(newSubscriptions);
   };
 
@@ -406,14 +426,15 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
   };
 
   const updateDiary = (text: string, rating: number, productivity: number) => {
-    const newDiary = _.cloneDeep(diary);
-    newDiary[selectedDate] = {
-      description: text,
-      rating,
-      productivity,
-      revised,
-    };
-    setDiary(newDiary);
+    setDiary((diary) => ({
+      ...diary,
+      [selectedDate]: {
+        description: text,
+        rating,
+        productivity,
+        revised,
+      }
+    }));
     setDiaryText(text);
     setRating(rating);
     setDisplayRating(rating);
@@ -692,21 +713,19 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
             </div>
           </div>
           <div>
-            {subscriptions.map((el, ind) =>
-              showAllSubs || subApplies(el, selectedDate)
-                ? (
-                  <SubscriptionComponent
-                    odd={ind % 2 == 1}
-                    inactive={!subApplies(el, selectedDate)}
-                    key={el._id}
-                    subscription={el}
-                    editSubscription={(s: Subscription) => editSub(ind, s)}
-                    deleteSubscription={() => deleteSub(ind)}
-                    selectedTag={selectedTag}
-                    incrementEdits={() => setEditCounts((ec) => ec + 1)}
-                    decrementEdits={() => setEditCounts((ec) => ec - 1)}
-                  />
-                ) : null)}
+            {visibleSubscriptions.map((el, ind) => (
+              <SubscriptionComponent
+                odd={ind % 2 == 1}
+                inactive={!subApplies(el, selectedDate)}
+                key={el._id}
+                subscription={el}
+                editSubscription={editSub}
+                deleteSubscription={deleteSub}
+                selectedTag={selectedTag}
+                incrementEdits={() => setEditCounts((ec) => ec + 1)}
+                decrementEdits={() => setEditCounts((ec) => ec - 1)}
+              />
+            ))}
           </div>
         </div>
         <div className={classes.finTransactionContainer}>
@@ -730,7 +749,7 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
             {transactions.map((el, ind) => (
               <TransactionComponent
                 key={el.id}
-                odd={(ind + subscriptions.length) % 2 == 1}
+                odd={ind % 2 == 1}
                 transaction={el}
                 editTransaction={(t: Transaction) => editTransaction(ind, t)}
                 deleteTransaction={() => deleteTransaction(ind)}
