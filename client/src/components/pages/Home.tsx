@@ -17,9 +17,10 @@ import {
 import { subApplies, sortByDate, stripId } from "../../../../helpers";
 import TransactionComponent from "../modules/Transaction";
 import SubscriptionComponent from "../modules/Subscription";
-import { generateReactCalendarStyle, makeStyles } from "../../theme";
+import { generateReactCalendarStyle, makeStyles, theme } from "../../theme";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faStar } from '@fortawesome/free-solid-svg-icons';
+import ClipLoader from "react-spinners/ClipLoader";
 
 interface HomeProps {
   userInfo: User;
@@ -67,6 +68,8 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
   const [changeSet, setChangeSet] = useState<string[]>([]);
   const [incompleteDates, setIncompleteDates] = useState<string[]>([]);
 
+  const [loading, setLoading] = useState(true);
+
   const transactions = useMemo(
     () => finance[selectedDate] ?? [],
     [finance, selectedDate]
@@ -98,70 +101,69 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
     handleChange();
   }, [diary, originalDiary, finance, originalFinance, selectedDate]);
 
-  const fetchAllYears = async (): Promise<{
-    diary: Diary;
-    finance: FinanceLog;
-  }> => {
-    const newDiary: Diary = _.clone(diary);
-    const newFinance: FinanceLog = _.clone(finance);
-    const allYears = await (await fetch("/api/all_years")).json();
-    for (const year of allYears) {
-      const { diary: newDiaryEntry, finance: newFinanceEntry } =
-        await fetchYear(year);
-      Object.assign(newDiary, newDiaryEntry);
-      Object.assign(newFinance, newFinanceEntry);
-    }
-    return { diary: newDiary, finance: newFinance };
-  };
-
-  const fetchYear = async (
-    year: string
+  const fetchYears = async (
+    years: string[]
   ): Promise<{ diary: Diary; finance: FinanceLog }> => {
-    let newDiary = diary;
-    let newFinance = finance;
-    if (year && !queriedYears.includes(year)) {
+    setLoading(true);
+    let newDiary = _.clone(diary);
+    let newFinance = _.clone(finance);
+
+    const newYears = years.filter(year => !queriedYears.includes(year));
+    const newData = await Promise.all(newYears.map(async year => {
       const newDiaryEntry = await (
         await fetch(`/api/diary?year=${year}`)
       ).json();
-
-      newDiary = {
-        ...diary,
-        ...newDiaryEntry,
-      };
-      setDiary((diary) => ({
-        ...diary,
-        ...newDiaryEntry,
-      }));
-      setOriginalDiary((originalDiary) => ({
-        ...originalDiary,
-        ...newDiaryEntry,
-      }));
-
       const newFinanceEntry = await (
         await fetch(`/api/finance?year=${year}`)
       ).json();
-      newFinance = {
-        ...finance,
-        ...newFinanceEntry,
+      return {
+        newDiaryEntry,
+        newFinanceEntry,
       };
-      setFinance((finance) => ({
-        ...finance,
-        ...newFinanceEntry,
-      }));
-      setOriginalFinance((originalFinance) => ({
-        ...originalFinance,
-        ...newFinanceEntry,
-      }));
+    }));
+    const newDiaryInfo = newData.reduce(
+      (curDiary, { newDiaryEntry }) => ({...curDiary, ...newDiaryEntry}),
+      {},
+    );
+    const newFinanceInfo = newData.reduce(
+      (curFinance, { newFinanceEntry }) => ({...curFinance, ...newFinanceEntry}),
+      {},
+    );
 
-      setQueriedYears((queriedYears) => [...queriedYears, year]);
-    }
+    newDiary = {
+      ...diary,
+      ...newDiaryInfo,
+    };
+    setDiary((diary) => ({
+      ...diary,
+      ...newDiaryInfo,
+    }));
+    setOriginalDiary((originalDiary) => ({
+      ...originalDiary,
+      ...newDiaryInfo,
+    }));
+
+    newFinance = {
+      ...finance,
+      ...newFinanceInfo,
+    };
+    setFinance((finance) => ({
+      ...finance,
+      ...newFinanceInfo,
+    }));
+    setOriginalFinance((originalFinance) => ({
+      ...originalFinance,
+      ...newFinanceInfo,
+    }));
+    setQueriedYears((queriedYears) => [...queriedYears, ...newYears]);
+    setLoading(false);
     return { diary: newDiary, finance: newFinance };
   };
 
   useEffect(() => {
     (async () => {
       const year = _.last(selectedDate.split("/"));
-      const { diary: newDiary } = await fetchYear(year);
+      const { diary: newDiary } = await fetchYears([year]);
       calendarChange(selectedDate, newDiary);
       if (selectedDate === refresherDate) {
         setRevised(true);
@@ -201,7 +203,8 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
   }
 
   const search = async () => {
-    const { diary, finance } = await fetchAllYears();
+    const allYears = await (await fetch("/api/all_years")).json();
+    const { diary, finance } = await fetchYears(allYears);
     const contains = (stringA: string, stringB: string) => {
       const strippedA = (stringA || "")
         .replace(/ /g, "")
@@ -443,7 +446,7 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
   };
 
   const saveInfo = () => {
-    if (editCounts) {
+    if (!!editCounts || loading) {
       return;
     }
     const body = {
@@ -477,7 +480,7 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
             className={classes.calendar}
             onClickDay={(e: any) => calendarChange(e.toLocaleDateString())}
             onActiveStartDateChange={(e: any) =>
-              fetchYear(new Date(e.activeStartDate).getFullYear().toString())
+              fetchYears([new Date(e.activeStartDate).getFullYear().toString()])
             }
             calendarType="US"
             tileClassName={(properties: any) => {
@@ -545,71 +548,82 @@ const Home: React.FC<HomeProps> = ({ userInfo }) => {
               ))}
             </div>
           </div>
-          <div className={classes.diaryHeader}>
-            {selectedDate}
-            <div className={classes.refresherHeader}>
-              {!!refresherDate ? (
-                <div
-                  className={clsx(classes.simpleButton, classes.homeDate)}
-                  onClick={() => calendarChange(refresherDate)}
-                >
-                  {refresherDate}
-                </div>
-              ) : (
-                <div>
-                  Click for refresher:
-                </div>
-              )}
-              <img
-                className={clsx(classes.smallButton, "picture")}
-                onClick={fetchNewRefresherDate}
-                src={"/media/refresh.svg"}
+          { loading ? (
+            <div className={classes.loader}>
+              <ClipLoader
+                color={theme.colors.periwinkle100}
+                loading={loading}
               />
             </div>
-            <div
-              className={classes.changeContainer}
-              onMouseEnter={() => setHoverDetails(true)}
-              onMouseLeave={() => setHoverDetails(false)}
-            >
-              {!diaryText ? 0 : diaryText.length} / {changeSet.length} /{" "}
-              {incompleteDates.length}
-              {!changeSet.length ? (
-                <div
-                  className={clsx(classes.changeDetails, {
-                    [classes.changeDetailsVisible]: hoverDetails,
-                  })}
-                >
-                  letters/changes/incomplete
-                </div>
-              ) : (
-                <div
-                  className={clsx(classes.changeDetails, {
-                    [classes.changeDetailsVisible]: hoverDetails,
-                  })}
-                >
-                  {changeSet.join("\n")}
-                </div>
-              )}
-            </div>
-          </div>
-          <div className={classes.ratingContainer}>
+          ) : (
             <div>
-              RATING: {createRatingStars()}
+              <div className={classes.diaryHeader}>
+                {selectedDate}
+                <div className={classes.refresherHeader}>
+                  {!!refresherDate ? (
+                    <div
+                      className={clsx(classes.simpleButton, classes.homeDate)}
+                      onClick={() => calendarChange(refresherDate)}
+                    >
+                      {refresherDate}
+                    </div>
+                  ) : (
+                    <div>
+                      Click for refresher:
+                    </div>
+                  )}
+                  <img
+                    className={clsx(classes.smallButton, "picture")}
+                    onClick={fetchNewRefresherDate}
+                    src={"/media/refresh.svg"}
+                  />
+                </div>
+                <div
+                  className={classes.changeContainer}
+                  onMouseEnter={() => setHoverDetails(true)}
+                  onMouseLeave={() => setHoverDetails(false)}
+                >
+                  {!diaryText ? 0 : diaryText.length} / {changeSet.length} /{" "}
+                  {incompleteDates.length}
+                  {!changeSet.length ? (
+                    <div
+                      className={clsx(classes.changeDetails, {
+                        [classes.changeDetailsVisible]: hoverDetails,
+                      })}
+                    >
+                      letters/changes/incomplete
+                    </div>
+                  ) : (
+                    <div
+                      className={clsx(classes.changeDetails, {
+                        [classes.changeDetailsVisible]: hoverDetails,
+                      })}
+                    >
+                      {changeSet.join("\n")}
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className={classes.ratingContainer}>
+                <div>
+                  RATING: {createRatingStars()}
+                </div>
+                <div>
+                  PRODUCTIVITY: {createProductivityStars()}
+                </div>
+              </div>
+              <textarea
+                className={classes.diaryEntry}
+                name="diaryEntry"
+                id="diaryEntry"
+                value={diaryText}
+                onChange={(e) => updateDiary(e.target.value, rating, productivity)}
+              />
             </div>
-            <div>
-              PRODUCTIVITY: {createProductivityStars()}
-            </div>
-          </div>
-          <textarea
-            className={classes.diaryEntry}
-            name="diaryEntry"
-            id="diaryEntry"
-            value={diaryText}
-            onChange={(e) => updateDiary(e.target.value, rating, productivity)}
-          />
+          )}
           <div
             className={clsx(classes.button, {
-              disabled: !!editCounts,
+              disabled: !!editCounts || loading,
             })}
             onClick={saveInfo}
           >
@@ -1076,6 +1090,11 @@ const useStyles = makeStyles((theme) => ({
   searchHeader: {
     display: "flex",
     flexDirection: "row",
+  },
+  loader: {
+    display: "flex",
+    justifyContent: "center",
+    margin: `${theme.spacing(1)}px 0`
   },
 }));
 

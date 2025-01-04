@@ -110,7 +110,7 @@ const Profile: React.FC<ProfileProps> = ({ userInfo }) => {
   };
 
   const saveProfile = () => {
-    if (editCounts) {
+    if (!!editCounts) {
       return;
     }
     const body = {

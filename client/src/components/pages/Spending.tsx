@@ -27,6 +27,7 @@ import {
   getTransactionsWithinDates,
 } from "../../../../helpers";
 import { generateReactCalendarStyle, makeStyles, theme } from "../../theme";
+import ClipLoader from "react-spinners/ClipLoader";
 
 interface SpendingProps {
   userInfo: User;
@@ -69,21 +70,29 @@ const Spending: React.FC<SpendingProps> = ({ userInfo }) => {
   const [graphTags, setGraphTags] = useState(_.cloneDeep(allTags));
   const [selectingGraph, setSelectingGraph] = useState(false);
 
+  const [loading, setLoading] = useState(true);
+
   useEffect(() => {
     document.title = "Spending";
   }, []);
 
   useEffect(() => {
     (async () => {
-      const finance: FinanceLog = {};
-      const allYears = await (await fetch("/api/all_years")).json();
-      for (const year of allYears) {
+      setLoading(true);
+      const allYears: string[] = await (await fetch("/api/all_years")).json();
+      const newData = await Promise.all(allYears.map(async year => {
         const newFinanceEntry = await (
           await fetch(`/api/finance?year=${year}`)
         ).json();
-        Object.assign(finance, newFinanceEntry);
-      }
-      setFinance(finance);
+        return newFinanceEntry;
+      }));
+      setFinance(
+        newData.reduce(
+          (curFinance, newFinanceEntry) => ({...curFinance, ...newFinanceEntry}),
+          {},
+        )
+      );
+      setLoading(false);
     })();
   }, []);
 
@@ -239,45 +248,54 @@ const Spending: React.FC<SpendingProps> = ({ userInfo }) => {
             ))}
           </div>
         </div>
-        <div className={classes.chartBody}>
-          <div className={classes.chartPie}>
-            <PieChart
-              data={pieData}
-              onClick={(_, index) => setDefaultHoverKey(pieData[index].title)}
-              onMouseOver={(_, index) => setHoverKey(pieData[index].title)}
-              onMouseOut={() => setHoverKey("")}
+        { loading ? (
+          <div className={clsx(classes.chartBody, classes.loader)}>
+            <ClipLoader
+              color={theme.colors.periwinkle100}
+              loading={loading}
             />
           </div>
-          <div className={classes.chartTotals}>
-            <div className={classes.chartTotalMain}>
-              TOTAL: {formatCost(total)}
+        ) : (
+          <div className={classes.chartBody}>
+            <div className={classes.chartPie}>
+              <PieChart
+                data={pieData}
+                onClick={(_, index) => setDefaultHoverKey(pieData[index].title)}
+                onMouseOver={(_, index) => setHoverKey(pieData[index].title)}
+                onMouseOut={() => setHoverKey("")}
+              />
             </div>
-            <div className={classes.chartDetails}>
-              <div>
-                {pieData.map((el) => (
-                  <div
-                    key={mkk([el.title, el.value])}
-                    className={clsx({
-                      [classes.chartHoverKey]: el.title === curKey,
-                    })}
-                  >
-                    {el.title} : {formatCost(el.value)}
-                  </div>
-                ))}
+            <div className={classes.chartTotals}>
+              <div className={classes.chartTotalMain}>
+                TOTAL: {formatCost(total)}
               </div>
-              <div className={classes.chartTransactions}>
-                {curTransactions.map((transaction, ind) => (
-                  <div
-                    key={mkk([ind, transaction])}
-                  >
-                    {transaction.date} - {transaction.location}:{" "}
-                    {formatCost(transaction.cost)}
-                  </div>
-                ))}
+              <div className={classes.chartDetails}>
+                <div>
+                  {pieData.map((el) => (
+                    <div
+                      key={mkk([el.title, el.value])}
+                      className={clsx({
+                        [classes.chartHoverKey]: el.title === curKey,
+                      })}
+                    >
+                      {el.title} : {formatCost(el.value)}
+                    </div>
+                  ))}
+                </div>
+                <div className={classes.chartTransactions}>
+                  {curTransactions.map((transaction, ind) => (
+                    <div
+                      key={mkk([ind, transaction])}
+                    >
+                      {transaction.date} - {transaction.location}:{" "}
+                      {formatCost(transaction.cost)}
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
       <div className={classes.graphContainer}>
         <div className={classes.graphHeader}>
@@ -352,15 +370,24 @@ const Spending: React.FC<SpendingProps> = ({ userInfo }) => {
             <div className={clsx(classes.smallButton, "text")} onClick={selectAllGraphTags}>ALL</div>
             <div className={clsx(classes.smallButton, "text")} onClick={deselectAllGraphTags}>NONE</div>
           </div>
-          <ResponsiveContainer className={classes.histogramContainer} width="100%" height={400}>
-            <BarChart data={graphData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="range" />
-              <YAxis tickFormatter={formatCost} />
-              <Tooltip formatter={formatCost} />
-              <Bar dataKey="total" fill={theme.colors.periwinkle100} />
-            </BarChart>
-          </ResponsiveContainer>
+          { loading ? (
+            <div className={classes.loader}>
+              <ClipLoader
+                color={theme.colors.periwinkle100}
+                loading={loading}
+              />
+            </div>
+          ) : (
+            <ResponsiveContainer className={classes.histogramContainer} width="100%" height={400}>
+              <BarChart data={graphData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="range" />
+                <YAxis tickFormatter={formatCost} />
+                <Tooltip formatter={formatCost} />
+                <Bar dataKey="total" fill={theme.colors.periwinkle100} />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
         </div>
       </div>
     </div>
@@ -552,6 +579,12 @@ const useStyles = makeStyles((theme) => ({
   },
   histogramContainer: {
     padding: theme.spacing(1),
+  },
+  loader: {
+    width: "100%",
+    display: "flex",
+    justifyContent: "center",
+    margin: `${theme.spacing(1)}px 0`
   },
 }));
 
